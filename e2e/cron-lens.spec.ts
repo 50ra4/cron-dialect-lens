@@ -17,7 +17,7 @@ test('explains both cron dialects and remains idempotent after a client render',
     extensionPage.getByText('github-actions · high confidence'),
   ).toBeVisible();
   await expect(
-    extensionPage.getByText('Schedule: Asia/Tokyo · Browser: Asia/Tokyo'),
+    extensionPage.getByText('Schedule: Asia/Tokyo · Browser: UTC'),
   ).toBeVisible();
   await expect(extensionPage.locator('time')).toHaveCount(5);
 

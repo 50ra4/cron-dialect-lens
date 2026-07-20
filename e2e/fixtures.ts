@@ -120,6 +120,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
           {
             channel: 'chromium',
             headless: true,
+            timezoneId: 'UTC',
             args: [
               `--disable-extensions-except=${extensionPath}`,
               `--load-extension=${extensionPath}`,
