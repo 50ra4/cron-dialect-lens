@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { createManifestVersion } from './manifest-version.mjs';
 
 const EXPECTED_CSP = "script-src 'self'; object-src 'self';";
-const EXPECTED_MATCHES = ['https://example.com/*'];
-const EXPECTED_PERMISSIONS = ['storage'];
+const EXPECTED_MATCHES = ['https://github.com/*'];
+const EXPECTED_PERMISSIONS = [];
 const EXPECTED_HOST_PERMISSIONS = [];
 const GLOB = /[*?[\]{}]/u;
 const CONCRETE_JS_ASSET = /^assets\/[^*?[\]{}]+\.js$/u;
@@ -122,6 +122,9 @@ report(
   manifest.externally_connectable === undefined,
   'externally_connectable must not be declared.',
 );
+report(manifest.action === undefined, 'action must not be declared.');
+report(manifest.options_ui === undefined, 'options_ui must not be declared.');
+report(manifest.background === undefined, 'background must not be declared.');
 
 const csp = manifest.content_security_policy?.extension_pages;
 report(
@@ -150,6 +153,10 @@ report(
 const contentScripts = Array.isArray(manifest.content_scripts)
   ? manifest.content_scripts
   : [];
+report(
+  contentScripts.length === 1,
+  `content_scripts must contain exactly one entry; received ${contentScripts.length}.`,
+);
 contentScripts.forEach((entry, index) => {
   if (!isRecord(entry)) {
     errors.push(`content_scripts.${index} must be an object.`);
@@ -159,6 +166,10 @@ contentScripts.forEach((entry, index) => {
     entry.matches,
     EXPECTED_MATCHES,
     `content_scripts.${index}.matches`,
+  );
+  report(
+    entry.run_at === 'document_idle',
+    `content_scripts.${index}.run_at must equal "document_idle"; received ${JSON.stringify(entry.run_at)}.`,
   );
   for (const field of ['js', 'css']) {
     if (entry[field] === undefined) continue;

@@ -12,7 +12,7 @@
 次期バージョンを指定すると、`package.json` と `package-lock.json` が同時に更新される。
 
 ```sh
-npm version 1.1.0 --no-git-tag-version
+npm version 0.1.0 --no-git-tag-version
 npm ci
 npm run check-type
 npm run lint
@@ -25,6 +25,10 @@ npm run e2e
 リポジトリ直下の `extension.zip` に格納する。開発用アイコンは含めない。同一ソース・Node.js・
 lockfile からは同一内容の zip が生成される。`npm run zip` は互換用の別名である。
 
+タグ作成前に[manual-test.md](./manual-test.md)を完了し、manifestと
+[web-store-permissions.md](./web-store-permissions.md)、privacy、ストア文面、アイコン、
+1280×800 screenshotの整合性を確認する。
+
 生成物を手動確認する場合は `extension.zip` を展開し、Chrome の
 `chrome://extensions` で展開後のディレクトリを「パッケージ化されていない拡張機能を読み込む」から選択する。
 
@@ -35,8 +39,8 @@ lockfile からは同一内容の zip が生成される。`npm run zip` は互�
 ```sh
 git switch main
 git pull --ff-only
-git tag -a v1.1.0 -m "v1.1.0"
-git push origin v1.1.0
+git tag -a v0.1.0 -m "v0.1.0"
+git push origin v0.1.0
 ```
 
 プレリリースは package version とタグの両方を `1.1.0-rc.1` / `v1.1.0-rc.1`
@@ -45,3 +49,4 @@ Chrome Manifest の `version` には数値部分 (`1.1.0`)、`version_name` に�
 
 タグ push 後、GitHub Actions が type check、lint、unit test、manifest 検証、実 Chromium E2E を実行する。
 すべて成功した場合だけ、自動生成ノートと `extension.zip` を含む GitHub Release が作成される。
+GitHub Release成功後に、検証済み`extension.zip`をChrome Web Storeへ手動提出する。
