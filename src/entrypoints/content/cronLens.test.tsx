@@ -51,4 +51,58 @@ describe('startCronLens', () => {
       document.querySelectorAll('button[aria-label="Explain cron schedule"]'),
     ).toHaveLength(0);
   });
+
+  it('refreshes an existing button when its YAML context changes', async () => {
+    document.documentElement.innerHTML = fixture;
+    const runtime = startCronLens({
+      document,
+      environment: {
+        browserTimeZone: 'Asia/Tokyo',
+        language: 'en',
+      },
+      url: new URL('https://github.com/acme/widgets/pull/42/files'),
+    });
+    const buttons = document.querySelectorAll<HTMLButtonElement>(
+      'button[aria-label="Explain cron schedule"]',
+    );
+    const kubernetesButton = buttons[1];
+    expect(kubernetesButton).toBeDefined();
+
+    fireEvent.click(kubernetesButton as HTMLButtonElement);
+    const panelHost = document.querySelector('[data-cron-dialect-lens-panel]');
+    await waitFor(() => {
+      expect(panelHost?.shadowRoot?.textContent).toContain(
+        'Schedule: Asia/Tokyo',
+      );
+    });
+
+    const timeZoneLine = document.querySelector<HTMLElement>(
+      '[data-line-number="22"] .blob-code',
+    );
+    expect(timeZoneLine).not.toBeNull();
+    (timeZoneLine as HTMLElement).textContent = '+  timeZone: UTC';
+    runtime.scan();
+    fireEvent.click(kubernetesButton as HTMLButtonElement);
+    await waitFor(() => {
+      expect(panelHost?.shadowRoot?.textContent).toContain('Schedule: UTC');
+    });
+
+    const kindLine = document.querySelector<HTMLElement>(
+      '[data-line-number="20"] .blob-code',
+    );
+    expect(kindLine).not.toBeNull();
+    (kindLine as HTMLElement).textContent = '+kind: ConfigMap';
+    runtime.scan();
+
+    expect(
+      document.querySelectorAll('button[aria-label="Explain cron schedule"]'),
+    ).toHaveLength(2);
+    expect(kubernetesButton?.dataset.hasWarning).toBe('true');
+    fireEvent.click(kubernetesButton as HTMLButtonElement);
+    await waitFor(() => {
+      expect(panelHost?.shadowRoot?.textContent).toContain('unknown-posix');
+    });
+
+    runtime.cleanup();
+  });
 });

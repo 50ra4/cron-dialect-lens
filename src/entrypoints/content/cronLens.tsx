@@ -128,8 +128,10 @@ export const startCronLens = (
   const panel = createPanelController(document);
   const buttonStyles = createButtonStyles(document);
   const buttons = new Map<string, HTMLButtonElement>();
+  const analyses = new WeakMap<HTMLButtonElement, CronAnalysis>();
   const view = document.defaultView;
   let scanTimer: number | undefined;
+  let activeButton: HTMLButtonElement | undefined;
 
   const currentUrl = (): URL =>
     options.url ??
@@ -138,14 +140,20 @@ export const startCronLens = (
   const scan = (): void => {
     const matches = scanGitHubCronCandidates(document, currentUrl());
     matches.forEach(({ candidate, injectionTarget, lineElement }) => {
+      const analysis = analyzeCron(candidate, new Date(), environment);
       const existing = buttons.get(candidate.id);
       if (existing?.isConnected) {
+        analyses.set(existing, analysis);
+        existing.dataset.hasWarning = String(analysis.warnings.length > 0);
+        existing.textContent = analysis.warnings.length > 0 ? '⚠' : '◉';
         lineElement.dataset.cronDialectLensId = candidate.id;
+        if (activeButton === existing && !panel.host.hidden) {
+          panel.show(analysis, existing);
+        }
         return;
       }
       buttons.delete(candidate.id);
 
-      const analysis = analyzeCron(candidate, new Date(), environment);
       const button = document.createElement('button');
       button.type = 'button';
       button.dataset.cronDialectLensButton = candidate.id;
@@ -154,7 +162,13 @@ export const startCronLens = (
       button.title = 'Explain cron schedule';
       button.textContent = analysis.warnings.length > 0 ? '⚠' : '◉';
 
-      const open = (): void => panel.show(analysis, button);
+      analyses.set(button, analysis);
+      const open = (): void => {
+        const currentAnalysis = analyses.get(button);
+        if (!currentAnalysis) return;
+        activeButton = button;
+        panel.show(currentAnalysis, button);
+      };
       button.addEventListener('mouseenter', open);
       button.addEventListener('focus', open);
       button.addEventListener('click', open);
@@ -181,10 +195,14 @@ export const startCronLens = (
     const target = event.target;
     if (target instanceof Element && target.closest(BUTTON_SELECTOR)) return;
     if (event.composedPath().includes(panel.host)) return;
+    activeButton = undefined;
     panel.hide();
   };
   const onDocumentKeyDown = (event: KeyboardEvent): void => {
-    if (event.key === 'Escape') panel.hide();
+    if (event.key === 'Escape') {
+      activeButton = undefined;
+      panel.hide();
+    }
   };
   document.addEventListener('click', onDocumentClick);
   document.addEventListener('keydown', onDocumentKeyDown);

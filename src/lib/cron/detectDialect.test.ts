@@ -59,4 +59,98 @@ describe('detectDialect', () => {
       }),
     ).toEqual({ confidence: 'low', dialect: 'unknown-posix' });
   });
+
+  it.each([
+    {
+      expected: {
+        confidence: 'high',
+        dialect: 'kubernetes',
+        scheduleTimeZone: 'Asia/Tokyo',
+      },
+      name: 'uses only added context for an added schedule',
+      source: [
+        '+kind: CronJob',
+        '+spec:',
+        '-  timeZone: UTC',
+        '+  timeZone: Asia/Tokyo',
+        "+  schedule: '0 3 * * 1'",
+      ],
+      target: 4,
+    },
+    {
+      expected: { confidence: 'low', dialect: 'unknown-posix' },
+      name: 'ignores a removed kind for an added schedule',
+      source: [
+        '-kind: CronJob',
+        '+kind: ConfigMap',
+        '+spec:',
+        "+  schedule: '0 3 * * 1'",
+      ],
+      target: 3,
+    },
+  ])('$name', ({ expected, source, target }) => {
+    expect(
+      detectDialect({
+        context: 'pull-request-diff',
+        filePath: 'deploy/cronjob.yaml',
+        key: 'schedule',
+        lineIndex: target,
+        lines: lines(...source),
+      }),
+    ).toEqual(expected);
+  });
+
+  it.each([
+    {
+      name: 'metadata',
+      source: [
+        'kind: CronJob',
+        'metadata:',
+        '  annotations:',
+        '    timeZone: UTC',
+        'spec:',
+        "  schedule: '0 3 * * 1'",
+      ],
+      target: 5,
+    },
+    {
+      name: 'a nested pod template',
+      source: [
+        'kind: CronJob',
+        'spec:',
+        "  schedule: '0 3 * * 1'",
+        '  jobTemplate:',
+        '    spec:',
+        '      template:',
+        '        spec:',
+        '          timeZone: UTC',
+      ],
+      target: 2,
+    },
+    {
+      name: 'another CronJob in a List',
+      source: [
+        'kind: List',
+        'items:',
+        '  - kind: CronJob',
+        '    spec:',
+        '      timeZone: UTC',
+        "      schedule: '0 1 * * *'",
+        '  - kind: CronJob',
+        '    spec:',
+        "      schedule: '0 3 * * 1'",
+      ],
+      target: 8,
+    },
+  ])('does not use timeZone from $name', ({ source, target }) => {
+    expect(
+      detectDialect({
+        context: 'blob',
+        filePath: 'deploy/cronjob.yaml',
+        key: 'schedule',
+        lineIndex: target,
+        lines: lines(...source),
+      }),
+    ).toEqual({ confidence: 'high', dialect: 'kubernetes' });
+  });
 });

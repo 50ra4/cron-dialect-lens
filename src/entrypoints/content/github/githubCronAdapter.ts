@@ -117,7 +117,6 @@ const matchesForFile = (
     const extracted = extractCronLine(line.text);
     if (!extracted) return;
     const id = createCronId(filePath, line.lineNumber, extracted.expression);
-    if (line.element.dataset.cronDialectLensId === id) return;
 
     const detection = detectDialect({
       context,

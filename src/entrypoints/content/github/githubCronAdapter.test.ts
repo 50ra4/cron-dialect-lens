@@ -54,7 +54,7 @@ describe('scanGitHubCronCandidates', () => {
     });
   });
 
-  it('scans only YAML files in a PR and does not duplicate annotations', () => {
+  it('rescans YAML candidates in a PR so existing annotations can refresh', () => {
     const document = loadFixture('pr-files.html');
     const url = new URL('https://github.com/acme/widgets/pull/42/files');
 
@@ -69,7 +69,7 @@ describe('scanGitHubCronCandidates', () => {
       '.github/workflows/ci.yml',
       'deploy/cronjob.yaml',
     ]);
-    expect(second).toEqual([]);
+    expect(second).toHaveLength(2);
   });
 
   it('returns no matches for unsupported GitHub routes', () => {

@@ -20,32 +20,109 @@ type DetectionResult = {
 
 const YAML_PATH = /\.ya?ml$/iu;
 const WORKFLOW_PATH = /^\.github\/workflows\/.+\.ya?ml$/iu;
-const DOCUMENT_BOUNDARY = /^\s*[+-]?\s*---\s*$/u;
+const DOCUMENT_BOUNDARY = /^\s*---\s*$/u;
+
+const diffMarker = (text: string): '+' | '-' | undefined => {
+  const marker = text[0];
+  return marker === '+' || marker === '-' ? marker : undefined;
+};
+
+const withoutDiffMarker = (text: string): string =>
+  diffMarker(text) ? text.slice(1) : text;
+
+const currentSideContext = (
+  lines: VisibleCodeLine[],
+  lineIndex: number,
+): { lineIndex: number; lines: VisibleCodeLine[] } => {
+  const targetSide =
+    diffMarker(lines[lineIndex]?.text ?? '') === '-' ? '-' : '+';
+  const oppositeSide = targetSide === '+' ? '-' : '+';
+  const selected = lines
+    .map((line, originalIndex) => ({ line, originalIndex }))
+    .filter(({ line }) => diffMarker(line.text) !== oppositeSide);
+  const selectedLineIndex = selected.findIndex(
+    ({ originalIndex }) => originalIndex === lineIndex,
+  );
+
+  return {
+    lineIndex: selectedLineIndex,
+    lines: selected.map(({ line }) => ({
+      ...line,
+      text: withoutDiffMarker(line.text),
+    })),
+  };
+};
 
 const yamlValue = (line: string, key: string): string | undefined => {
   const pattern = new RegExp(
-    `^\\s*[+-]?\\s*${key}\\s*:\\s*['"]?([^'"#]+?)['"]?\\s*(?:#.*)?$`,
+    `^\\s*(?:-\\s*)?${key}\\s*:\\s*['"]?([^'"#]+?)['"]?\\s*(?:#.*)?$`,
     'iu',
   );
   return pattern.exec(line)?.[1]?.trim();
 };
 
-const documentRange = (
+const yamlKeyIndent = (line: string): number =>
+  /^\s*(?:-\s+)?/u.exec(line)?.[0].length ?? 0;
+
+const isMappingKey = (line: string, key: string): boolean =>
+  new RegExp(`^\\s*(?:-\\s*)?${key}\\s*:\\s*(?:#.*)?$`, 'iu').test(line);
+
+const sequenceIndent = (line: string): number | undefined =>
+  /^(\s*)-\s+/u.exec(line)?.[1]?.length;
+
+const findParentSpec = (
   lines: VisibleCodeLine[],
   lineIndex: number,
-): VisibleCodeLine[] => {
-  let start = lineIndex;
-  let end = lineIndex;
-  while (start > 0 && !DOCUMENT_BOUNDARY.test(lines[start - 1]?.text ?? '')) {
-    start -= 1;
+): number | undefined => {
+  const scheduleIndent = yamlKeyIndent(lines[lineIndex]?.text ?? '');
+  for (let index = lineIndex - 1; index >= 0; index -= 1) {
+    const text = lines[index]?.text ?? '';
+    if (DOCUMENT_BOUNDARY.test(text)) break;
+    if (yamlKeyIndent(text) < scheduleIndent && isMappingKey(text, 'spec')) {
+      return index;
+    }
   }
-  while (
-    end + 1 < lines.length &&
-    !DOCUMENT_BOUNDARY.test(lines[end + 1]?.text ?? '')
-  ) {
-    end += 1;
+  return undefined;
+};
+
+const findOwningKind = (
+  lines: VisibleCodeLine[],
+  specIndex: number,
+): string | undefined => {
+  const specIndent = yamlKeyIndent(lines[specIndex]?.text ?? '');
+  for (let index = specIndex - 1; index >= 0; index -= 1) {
+    const text = lines[index]?.text ?? '';
+    if (DOCUMENT_BOUNDARY.test(text)) break;
+    const kind = yamlValue(text, 'kind');
+    if (kind && yamlKeyIndent(text) <= specIndent) return kind;
+    const itemIndent = sequenceIndent(text);
+    if (itemIndent !== undefined && itemIndent < specIndent) break;
   }
-  return lines.slice(start, end + 1);
+  return undefined;
+};
+
+const findSpecTimeZone = (
+  lines: VisibleCodeLine[],
+  specIndex: number,
+  scheduleIndex: number,
+): string | undefined => {
+  const specIndent = yamlKeyIndent(lines[specIndex]?.text ?? '');
+  const scheduleIndent = yamlKeyIndent(lines[scheduleIndex]?.text ?? '');
+  for (let index = specIndex + 1; index < lines.length; index += 1) {
+    const text = lines[index]?.text ?? '';
+    if (DOCUMENT_BOUNDARY.test(text)) break;
+    if (
+      text.trim().length > 0 &&
+      !text.trimStart().startsWith('#') &&
+      yamlKeyIndent(text) <= specIndent
+    ) {
+      break;
+    }
+    if (yamlKeyIndent(text) !== scheduleIndent) continue;
+    const timeZone = yamlValue(text, 'timeZone');
+    if (timeZone) return timeZone;
+  }
+  return undefined;
 };
 
 const findWorkflowTimeZone = (
@@ -68,7 +145,12 @@ const findWorkflowTimeZone = (
 };
 
 export const detectDialect = (input: DetectionInput): DetectionResult => {
-  const { context, filePath, key, lineIndex, lines } = input;
+  const { context, filePath, key } = input;
+  const detectionContext =
+    context === 'pull-request-diff'
+      ? currentSideContext(input.lines, input.lineIndex)
+      : { lineIndex: input.lineIndex, lines: input.lines };
+  const { lineIndex, lines } = detectionContext;
 
   if (key === 'cron' && WORKFLOW_PATH.test(filePath)) {
     return {
@@ -81,14 +163,11 @@ export const detectDialect = (input: DetectionInput): DetectionResult => {
   }
 
   if (key === 'schedule' && YAML_PATH.test(filePath)) {
-    const visibleDocument = documentRange(lines, lineIndex);
-    const isCronJob = visibleDocument.some(
-      ({ text }) => yamlValue(text, 'kind')?.toLowerCase() === 'cronjob',
-    );
-    if (isCronJob) {
-      const scheduleTimeZone = visibleDocument
-        .map(({ text }) => yamlValue(text, 'timeZone'))
-        .find((value) => value !== undefined);
+    const specIndex = findParentSpec(lines, lineIndex);
+    const kind =
+      specIndex === undefined ? undefined : findOwningKind(lines, specIndex);
+    if (kind?.toLowerCase() === 'cronjob' && specIndex !== undefined) {
+      const scheduleTimeZone = findSpecTimeZone(lines, specIndex, lineIndex);
       return {
         confidence: 'high',
         dialect: 'kubernetes',
