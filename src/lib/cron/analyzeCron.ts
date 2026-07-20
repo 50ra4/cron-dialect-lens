@@ -39,6 +39,25 @@ const invalidTimeZoneWarning = (timeZone: string): CronWarning => ({
   severity: 'error',
 });
 
+const invalidExpressionWarning = (error: unknown): CronWarning => ({
+  code: 'INVALID_EXPRESSION',
+  message:
+    error instanceof Error ? error.message : 'The cron expression is invalid.',
+  severity: 'error',
+});
+
+const validateExpression = (
+  expression: string,
+  currentDate: Date,
+): CronWarning | undefined => {
+  try {
+    CronExpressionParser.parse(expression, { currentDate });
+    return undefined;
+  } catch (error: unknown) {
+    return invalidExpressionWarning(error);
+  }
+};
+
 const describe = (expression: string, language: string): string | undefined => {
   try {
     return describeExpression(expression, {
@@ -164,6 +183,12 @@ export const analyzeCron = (
   if (timeZone !== undefined && !isValidTimeZone(timeZone)) {
     warnings.push(invalidTimeZoneWarning(timeZone));
   } else if (
+    timeZone === undefined &&
+    !warnings.some(({ severity }) => severity === 'error')
+  ) {
+    const syntaxWarning = validateExpression(expression, now);
+    if (syntaxWarning) warnings.push(syntaxWarning);
+  } else if (
     timeZone !== undefined &&
     !warnings.some(({ severity }) => severity === 'error')
   ) {
@@ -174,14 +199,7 @@ export const analyzeCron = (
         if (shortInterval) warnings.push(shortInterval);
       }
     } catch (error: unknown) {
-      warnings.push({
-        code: 'INVALID_EXPRESSION',
-        message:
-          error instanceof Error
-            ? error.message
-            : 'The cron expression is invalid.',
-        severity: 'error',
-      });
+      warnings.push(invalidExpressionWarning(error));
     }
   }
 

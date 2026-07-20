@@ -69,6 +69,7 @@ describe('scanGitHubCronCandidates', () => {
       '.github/workflows/ci.yml',
       'deploy/cronjob.yaml',
     ]);
+    expect(first[1]?.candidate.scheduleTimeZone).toBe('Asia/Tokyo');
     expect(second).toHaveLength(2);
   });
 

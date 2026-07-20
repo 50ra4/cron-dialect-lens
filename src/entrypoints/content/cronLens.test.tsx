@@ -18,10 +18,15 @@ describe('startCronLens', () => {
     expect(
       document.querySelectorAll('button[aria-label="Explain cron schedule"]'),
     ).toHaveLength(2);
+    const initialFirstButton = document.querySelector<HTMLButtonElement>(
+      'button[aria-label="Explain cron schedule"]',
+    );
+    const initialTextNode = initialFirstButton?.firstChild;
     runtime.scan();
     expect(
       document.querySelectorAll('button[aria-label="Explain cron schedule"]'),
     ).toHaveLength(2);
+    expect(initialFirstButton?.firstChild).toBe(initialTextNode);
 
     const firstButton = document.querySelector<HTMLButtonElement>(
       'button[aria-label="Explain cron schedule"]',
@@ -77,10 +82,10 @@ describe('startCronLens', () => {
     });
 
     const timeZoneLine = document.querySelector<HTMLElement>(
-      '[data-line-number="22"] .blob-code',
+      '[data-line-number="22"] .blob-code-addition',
     );
     expect(timeZoneLine).not.toBeNull();
-    (timeZoneLine as HTMLElement).textContent = '+  timeZone: UTC';
+    (timeZoneLine as HTMLElement).textContent = '  timeZone: UTC';
     runtime.scan();
     fireEvent.click(kubernetesButton as HTMLButtonElement);
     await waitFor(() => {
@@ -91,7 +96,7 @@ describe('startCronLens', () => {
       '[data-line-number="20"] .blob-code',
     );
     expect(kindLine).not.toBeNull();
-    (kindLine as HTMLElement).textContent = '+kind: ConfigMap';
+    (kindLine as HTMLElement).textContent = 'kind: ConfigMap';
     runtime.scan();
 
     expect(

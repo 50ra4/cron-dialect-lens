@@ -64,6 +64,58 @@ const readCodeText = (cell: HTMLElement): string => {
   return copy.textContent ?? '';
 };
 
+const normalizeDiffSide = (
+  value: string | undefined,
+): VisibleCodeLine['diffSide'] => {
+  switch (value?.toLowerCase()) {
+    case '+':
+    case 'add':
+    case 'added':
+    case 'addition':
+      return 'addition';
+    case '-':
+    case 'delete':
+    case 'deleted':
+    case 'deletion':
+      return 'deletion';
+    case 'context':
+    case 'unchanged':
+      return 'context';
+    default:
+      return undefined;
+  }
+};
+
+const readDiffSide = (
+  line: HTMLElement,
+  cell: HTMLElement,
+): VisibleCodeLine['diffSide'] => {
+  const marker = cell.querySelector<HTMLElement>('[data-code-marker]');
+  for (const value of [
+    line.dataset.diffSide,
+    line.dataset.lineType,
+    cell.dataset.diffSide,
+    cell.dataset.lineType,
+    cell.dataset.codeMarker,
+    marker?.dataset.codeMarker,
+  ]) {
+    const side = normalizeDiffSide(value);
+    if (side) return side;
+  }
+
+  const classRoot = line.matches(
+    '.blob-code-addition, .blob-code-context, .blob-code-deletion',
+  )
+    ? line
+    : line.querySelector<HTMLElement>(
+        '.blob-code-addition, .blob-code-context, .blob-code-deletion',
+      );
+  if (classRoot?.classList.contains('blob-code-addition')) return 'addition';
+  if (classRoot?.classList.contains('blob-code-deletion')) return 'deletion';
+  if (classRoot?.classList.contains('blob-code-context')) return 'context';
+  return undefined;
+};
+
 const recoverUsingSelector = (
   root: ParentNode,
   selector: string,
@@ -72,7 +124,9 @@ const recoverUsingSelector = (
     .map((element): RecoveredLine | undefined => {
       const injectionTarget = findCodeCell(element);
       if (!injectionTarget) return undefined;
+      const diffSide = readDiffSide(element, injectionTarget);
       return {
+        ...(diffSide ? { diffSide } : {}),
         element,
         injectionTarget,
         lineNumber: readLineNumber(element),

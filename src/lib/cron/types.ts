@@ -2,6 +2,8 @@ export type CronDialect = 'github-actions' | 'kubernetes' | 'unknown-posix';
 
 export type DetectionConfidence = 'high' | 'medium' | 'low';
 
+export type DiffLineSide = 'addition' | 'context' | 'deletion';
+
 export type CronCandidate = {
   id: string;
   expression: string;
@@ -43,6 +45,7 @@ export type CronAnalysis = {
 };
 
 export type VisibleCodeLine = {
+  diffSide?: DiffLineSide;
   element?: HTMLElement;
   lineNumber?: number;
   text: string;

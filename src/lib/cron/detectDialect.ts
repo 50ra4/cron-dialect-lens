@@ -22,24 +22,36 @@ const YAML_PATH = /\.ya?ml$/iu;
 const WORKFLOW_PATH = /^\.github\/workflows\/.+\.ya?ml$/iu;
 const DOCUMENT_BOUNDARY = /^\s*---\s*$/u;
 
-const diffMarker = (text: string): '+' | '-' | undefined => {
+const legacyDiffMarker = (text: string): '+' | '-' | undefined => {
   const marker = text[0];
   return marker === '+' || marker === '-' ? marker : undefined;
 };
 
-const withoutDiffMarker = (text: string): string =>
-  diffMarker(text) ? text.slice(1) : text;
+const inferredDiffSide = (
+  line: VisibleCodeLine,
+): VisibleCodeLine['diffSide'] => {
+  if (line.diffSide) return line.diffSide;
+  const marker = legacyDiffMarker(line.text);
+  return marker === '+' ? 'addition' : marker === '-' ? 'deletion' : undefined;
+};
+
+const codeText = (line: VisibleCodeLine): string =>
+  line.diffSide === undefined && legacyDiffMarker(line.text)
+    ? line.text.slice(1)
+    : line.text;
 
 const currentSideContext = (
   lines: VisibleCodeLine[],
   lineIndex: number,
 ): { lineIndex: number; lines: VisibleCodeLine[] } => {
   const targetSide =
-    diffMarker(lines[lineIndex]?.text ?? '') === '-' ? '-' : '+';
-  const oppositeSide = targetSide === '+' ? '-' : '+';
+    inferredDiffSide(lines[lineIndex] ?? { text: '' }) === 'deletion'
+      ? 'deletion'
+      : 'addition';
+  const oppositeSide = targetSide === 'addition' ? 'deletion' : 'addition';
   const selected = lines
     .map((line, originalIndex) => ({ line, originalIndex }))
-    .filter(({ line }) => diffMarker(line.text) !== oppositeSide);
+    .filter(({ line }) => inferredDiffSide(line) !== oppositeSide);
   const selectedLineIndex = selected.findIndex(
     ({ originalIndex }) => originalIndex === lineIndex,
   );
@@ -48,7 +60,7 @@ const currentSideContext = (
     lineIndex: selectedLineIndex,
     lines: selected.map(({ line }) => ({
       ...line,
-      text: withoutDiffMarker(line.text),
+      text: codeText(line),
     })),
   };
 };

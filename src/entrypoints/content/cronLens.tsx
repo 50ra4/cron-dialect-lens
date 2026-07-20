@@ -145,7 +145,8 @@ export const startCronLens = (
       if (existing?.isConnected) {
         analyses.set(existing, analysis);
         existing.dataset.hasWarning = String(analysis.warnings.length > 0);
-        existing.textContent = analysis.warnings.length > 0 ? '⚠' : '◉';
+        const icon = analysis.warnings.length > 0 ? '⚠' : '◉';
+        if (existing.textContent !== icon) existing.textContent = icon;
         lineElement.dataset.cronDialectLensId = candidate.id;
         if (activeButton === existing && !panel.host.hidden) {
           panel.show(analysis, existing);

@@ -70,6 +70,31 @@ describe('analyzeCron', () => {
     );
   });
 
+  it.each([
+    ['kubernetes', 'KUBERNETES_CONTROLLER_TIMEZONE_UNKNOWN'],
+    ['unknown-posix', 'DIALECT_UNCERTAIN'],
+  ] as const)(
+    'rejects invalid %s syntax without calculating environment-specific run times',
+    (dialect, expectedContextWarning) => {
+      const analysis = analyzeCron(
+        candidate(dialect, '61 * * * *'),
+        now,
+        environment,
+      );
+
+      expect(analysis.nextRuns).toEqual([]);
+      expect(analysis.warnings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'INVALID_EXPRESSION',
+            severity: 'error',
+          }),
+          expect.objectContaining({ code: expectedContextWarning }),
+        ]),
+      );
+    },
+  );
+
   it('supports Kubernetes macros with an explicit timezone', () => {
     const analysis = analyzeCron(
       candidate('kubernetes', '@daily', 'Asia/Tokyo'),
