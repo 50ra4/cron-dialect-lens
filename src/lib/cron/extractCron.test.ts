@@ -27,4 +27,12 @@ describe('createCronId', () => {
       createCronId('./.github/workflows/ci.yml', 12, '0   * * * *'),
     );
   });
+
+  it('keeps addition and deletion candidates distinct on a split diff', () => {
+    expect(
+      createCronId('deploy/cronjob.yaml', 23, '0 3 * * 1', 'addition'),
+    ).not.toBe(
+      createCronId('deploy/cronjob.yaml', 23, '0 3 * * 1', 'deletion'),
+    );
+  });
 });

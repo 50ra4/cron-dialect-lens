@@ -3,12 +3,14 @@ import actionsBlob from './fixtures/actions-blob.html?raw';
 import kubernetesBlob from './fixtures/kubernetes-blob.html?raw';
 import incompletePullRequest from './fixtures/pr-incomplete.html?raw';
 import pullRequestFiles from './fixtures/pr-files.html?raw';
+import splitPullRequest from './fixtures/pr-split.html?raw';
 
 const fixtures: Record<string, string> = {
   'actions-blob.html': actionsBlob,
   'kubernetes-blob.html': kubernetesBlob,
   'pr-incomplete.html': incompletePullRequest,
   'pr-files.html': pullRequestFiles,
+  'pr-split.html': splitPullRequest,
 };
 
 const loadFixture = (name: string): Document => {
@@ -91,6 +93,28 @@ describe('scanGitHubCronCandidates', () => {
     expect(matches[0]?.candidate).toMatchObject({
       confidence: 'low',
       dialect: 'unknown-posix',
+    });
+  });
+
+  it('recovers both code cells and their line numbers from a split PR diff', () => {
+    const matches = scanGitHubCronCandidates(
+      loadFixture('pr-split.html'),
+      new URL('https://github.com/acme/widgets/pull/42/files'),
+    );
+
+    expect(matches).toHaveLength(2);
+    expect(
+      matches.map(({ candidate }) => ({
+        lineNumber: candidate.lineNumber,
+        scheduleTimeZone: candidate.scheduleTimeZone,
+      })),
+    ).toEqual([
+      { lineNumber: 23, scheduleTimeZone: 'UTC' },
+      { lineNumber: 23, scheduleTimeZone: 'Asia/Tokyo' },
+    ]);
+    expect(new Set(matches.map(({ candidate }) => candidate.id)).size).toBe(2);
+    matches.forEach(({ injectionTarget, lineElement }) => {
+      expect(lineElement).toBe(injectionTarget);
     });
   });
 });

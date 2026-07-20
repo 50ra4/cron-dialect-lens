@@ -38,22 +38,58 @@ const parsePage = (url: URL): GitHubPage | undefined => {
   return undefined;
 };
 
-const readLineNumber = (line: HTMLElement): number | undefined => {
+const readLineNumberValue = (element: HTMLElement): string | undefined =>
+  element.dataset.lineNumber ??
+  element.querySelector<HTMLElement>('[data-line-number]')?.dataset
+    .lineNumber ??
+  element.id.match(/(?:LC?|R)[-_]?(\d+)$/u)?.[1];
+
+const precedingLineNumber = (cell: HTMLElement): string | undefined => {
+  let sibling = cell.previousElementSibling;
+  while (sibling) {
+    if (sibling instanceof HTMLElement) {
+      const value = readLineNumberValue(sibling);
+      if (value !== undefined) return value;
+      if (
+        sibling.matches('.blob-code, [data-code-cell], code, .react-code-text')
+      ) {
+        break;
+      }
+    }
+    sibling = sibling.previousElementSibling;
+  }
+  return undefined;
+};
+
+const readLineNumber = (
+  line: HTMLElement,
+  cell: HTMLElement,
+): number | undefined => {
   const value =
-    line.dataset.lineNumber ??
-    line.querySelector<HTMLElement>('[data-line-number]')?.dataset.lineNumber ??
-    line.id.match(/(?:LC?|R)[-_]?(\d+)$/u)?.[1];
+    readLineNumberValue(cell) ??
+    precedingLineNumber(cell) ??
+    readLineNumberValue(line);
   if (value === undefined) return undefined;
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : undefined;
 };
 
-const findCodeCell = (line: HTMLElement): HTMLElement | undefined =>
-  line.matches('.blob-code, [data-code-cell], code, .react-code-text')
-    ? line
-    : (line.querySelector<HTMLElement>(
-        '.blob-code, [data-code-cell], code, .react-code-text, td:last-child',
-      ) ?? undefined);
+const findCodeCells = (line: HTMLElement): HTMLElement[] => {
+  if (line.matches('.blob-code, [data-code-cell], code, .react-code-text')) {
+    return [line];
+  }
+  for (const selector of [
+    '.blob-code',
+    '[data-code-cell]',
+    'code',
+    '.react-code-text',
+  ]) {
+    const cells = [...line.querySelectorAll<HTMLElement>(selector)];
+    if (cells.length > 0) return cells;
+  }
+  const fallback = line.querySelector<HTMLElement>('td:last-child');
+  return fallback ? [fallback] : [];
+};
 
 const readCodeText = (cell: HTMLElement): string => {
   const copy = cell.cloneNode(true);
@@ -92,21 +128,21 @@ const readDiffSide = (
 ): VisibleCodeLine['diffSide'] => {
   const marker = cell.querySelector<HTMLElement>('[data-code-marker]');
   for (const value of [
-    line.dataset.diffSide,
-    line.dataset.lineType,
     cell.dataset.diffSide,
     cell.dataset.lineType,
     cell.dataset.codeMarker,
     marker?.dataset.codeMarker,
+    line.dataset.diffSide,
+    line.dataset.lineType,
   ]) {
     const side = normalizeDiffSide(value);
     if (side) return side;
   }
 
-  const classRoot = line.matches(
+  const classRoot = cell.matches(
     '.blob-code-addition, .blob-code-context, .blob-code-deletion',
   )
-    ? line
+    ? cell
     : line.querySelector<HTMLElement>(
         '.blob-code-addition, .blob-code-context, .blob-code-deletion',
       );
@@ -120,20 +156,23 @@ const recoverUsingSelector = (
   root: ParentNode,
   selector: string,
 ): RecoveredLine[] =>
-  [...root.querySelectorAll<HTMLElement>(selector)]
-    .map((element): RecoveredLine | undefined => {
-      const injectionTarget = findCodeCell(element);
-      if (!injectionTarget) return undefined;
-      const diffSide = readDiffSide(element, injectionTarget);
-      return {
-        ...(diffSide ? { diffSide } : {}),
-        element,
-        injectionTarget,
-        lineNumber: readLineNumber(element),
-        text: readCodeText(injectionTarget),
-      };
-    })
-    .filter((line): line is RecoveredLine => line !== undefined);
+  [...root.querySelectorAll<HTMLElement>(selector)].flatMap((element) =>
+    findCodeCells(element).map(
+      (injectionTarget, cellIndex, cells): RecoveredLine => {
+        const diffSide = readDiffSide(element, injectionTarget);
+        const diffPane =
+          cells.length > 1 ? (cellIndex === 0 ? 'left' : 'right') : undefined;
+        return {
+          ...(diffPane ? { diffPane } : {}),
+          ...(diffSide ? { diffSide } : {}),
+          element: injectionTarget,
+          injectionTarget,
+          lineNumber: readLineNumber(element, injectionTarget),
+          text: readCodeText(injectionTarget),
+        };
+      },
+    ),
+  );
 
 const recoverLines = (root: ParentNode): RecoveredLine[] => {
   for (const selector of [
@@ -170,7 +209,13 @@ const matchesForFile = (
   lines.forEach((line, lineIndex) => {
     const extracted = extractCronLine(line.text);
     if (!extracted) return;
-    const id = createCronId(filePath, line.lineNumber, extracted.expression);
+    const id = createCronId(
+      filePath,
+      line.lineNumber,
+      extracted.expression,
+      line.diffSide,
+      line.diffPane,
+    );
 
     const detection = detectDialect({
       context,

@@ -2,6 +2,7 @@ import { fireEvent, waitFor } from '@testing-library/dom';
 
 import { startCronLens } from './cronLens';
 import fixture from './github/fixtures/pr-files.html?raw';
+import splitFixture from './github/fixtures/pr-split.html?raw';
 
 describe('startCronLens', () => {
   it('injects accessible buttons idempotently and restores them after DOM replacement', async () => {
@@ -106,6 +107,30 @@ describe('startCronLens', () => {
     fireEvent.click(kubernetesButton as HTMLButtonElement);
     await waitFor(() => {
       expect(panelHost?.shadowRoot?.textContent).toContain('unknown-posix');
+    });
+
+    runtime.cleanup();
+  });
+
+  it('injects separate buttons into both sides of a split PR diff', () => {
+    document.documentElement.innerHTML = splitFixture;
+    const runtime = startCronLens({
+      document,
+      environment: {
+        browserTimeZone: 'Asia/Tokyo',
+        language: 'en',
+      },
+      url: new URL('https://github.com/acme/widgets/pull/42/files'),
+    });
+
+    const splitScheduleCells = document.querySelectorAll(
+      'tr:last-child .blob-code-context',
+    );
+    expect(splitScheduleCells).toHaveLength(2);
+    splitScheduleCells.forEach((cell) => {
+      expect(
+        cell.querySelectorAll('[data-cron-dialect-lens-button]'),
+      ).toHaveLength(1);
     });
 
     runtime.cleanup();

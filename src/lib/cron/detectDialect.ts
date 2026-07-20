@@ -44,14 +44,22 @@ const currentSideContext = (
   lines: VisibleCodeLine[],
   lineIndex: number,
 ): { lineIndex: number; lines: VisibleCodeLine[] } => {
+  const targetLine = lines[lineIndex] ?? { text: '' };
+  const targetPane = targetLine.diffPane;
   const targetSide =
-    inferredDiffSide(lines[lineIndex] ?? { text: '' }) === 'deletion'
+    targetPane === 'left' || inferredDiffSide(targetLine) === 'deletion'
       ? 'deletion'
       : 'addition';
   const oppositeSide = targetSide === 'addition' ? 'deletion' : 'addition';
   const selected = lines
     .map((line, originalIndex) => ({ line, originalIndex }))
-    .filter(({ line }) => inferredDiffSide(line) !== oppositeSide);
+    .filter(
+      ({ line }) =>
+        (targetPane === undefined ||
+          line.diffPane === undefined ||
+          line.diffPane === targetPane) &&
+        inferredDiffSide(line) !== oppositeSide,
+    );
   const selectedLineIndex = selected.findIndex(
     ({ originalIndex }) => originalIndex === lineIndex,
   );

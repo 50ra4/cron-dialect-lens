@@ -1,3 +1,5 @@
+import type { DiffLinePane, DiffLineSide } from './types';
+
 const CANDIDATE_PATTERN =
   /^\s*[+-]?\s*(?:-\s*)?(cron|schedule)\s*:\s*(.*?)\s*$/u;
 
@@ -68,7 +70,9 @@ export const createCronId = (
   filePath: string,
   lineNumber: number | undefined,
   expression: string,
+  diffSide?: DiffLineSide,
+  diffPane?: DiffLinePane,
 ): string =>
   `cron-lens-${hash(
-    `${normalizePath(filePath)}:${lineNumber ?? 'unknown'}:${expression.trim().replace(/\s+/gu, ' ')}`,
+    `${normalizePath(filePath)}:${lineNumber ?? 'unknown'}:${expression.trim().replace(/\s+/gu, ' ')}${diffSide ? `:${diffSide}` : ''}${diffPane ? `:${diffPane}` : ''}`,
   )}`;

@@ -4,6 +4,8 @@ export type DetectionConfidence = 'high' | 'medium' | 'low';
 
 export type DiffLineSide = 'addition' | 'context' | 'deletion';
 
+export type DiffLinePane = 'left' | 'right';
+
 export type CronCandidate = {
   id: string;
   expression: string;
@@ -45,6 +47,7 @@ export type CronAnalysis = {
 };
 
 export type VisibleCodeLine = {
+  diffPane?: DiffLinePane;
   diffSide?: DiffLineSide;
   element?: HTMLElement;
   lineNumber?: number;
