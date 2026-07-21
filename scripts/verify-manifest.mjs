@@ -3,6 +3,10 @@ import { isAbsolute, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createManifestVersion } from './manifest-version.mjs';
+import {
+  THIRD_PARTY_LICENSE_FILE,
+  validateThirdPartyLicenses,
+} from './third-party-licenses.mjs';
 
 const EXPECTED_CSP = "script-src 'self'; object-src 'self';";
 const EXPECTED_MATCHES = ['https://github.com/*'];
@@ -16,6 +20,10 @@ const extensionDirectory = fileURLToPath(
 );
 const manifestPath = resolve(extensionDirectory, 'manifest.json');
 const packagePath = fileURLToPath(new URL('../package.json', import.meta.url));
+const thirdPartyLicensePath = resolve(
+  extensionDirectory,
+  THIRD_PARTY_LICENSE_FILE,
+);
 const errors = [];
 const references = [];
 
@@ -72,10 +80,12 @@ const addIconReferences = (icons, field) => {
 
 let manifest;
 let packageJson;
+let thirdPartyLicenses;
 try {
-  [manifest, packageJson] = await Promise.all([
+  [manifest, packageJson, thirdPartyLicenses] = await Promise.all([
     readFile(manifestPath, 'utf8').then(JSON.parse),
     readFile(packagePath, 'utf8').then(JSON.parse),
+    readFile(thirdPartyLicensePath, 'utf8'),
   ]);
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
@@ -96,6 +106,12 @@ if (!isRecord(packageJson) || typeof packageJson.version !== 'string') {
 }
 
 const expectedManifestVersion = createManifestVersion(packageJson.version);
+errors.push(
+  ...validateThirdPartyLicenses(
+    thirdPartyLicenses,
+    isRecord(packageJson.dependencies) ? packageJson.dependencies : undefined,
+  ),
+);
 
 report(
   manifest.version === expectedManifestVersion.version,

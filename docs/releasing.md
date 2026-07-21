@@ -22,7 +22,9 @@ npm run e2e
 
 `npm run package` builds, verifies the manifest, and stores only the
 distributable files from `extension/` in `extension.zip` at the repository
-root. Development icons are excluded. The same source, Node.js version, and
+root. Development icons are excluded. The build and package checks require
+`THIRD_PARTY_LICENSES.txt`, including versioned copyright notices and complete
+MIT terms for every runtime dependency. The same source, Node.js version, and
 lockfile always produce a byte-identical zip. `npm run zip` is a compatibility
 alias.
 

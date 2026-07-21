@@ -84,25 +84,43 @@ const yamlValue = (line: string, key: string): string | undefined => {
 const yamlKeyIndent = (line: string): number =>
   /^\s*(?:-\s+)?/u.exec(line)?.[0].length ?? 0;
 
-const isMappingKey = (line: string, key: string): boolean =>
-  new RegExp(`^\\s*(?:-\\s*)?${key}\\s*:\\s*(?:#.*)?$`, 'iu').test(line);
+const yamlMappingKey = (line: string): string | undefined =>
+  /^\s*(?:-\s*)?['"]?([a-z0-9_.-]+)['"]?\s*:\s*(?:#.*)?$/iu.exec(line)?.[1];
 
 const sequenceIndent = (line: string): number | undefined =>
   /^(\s*)-\s+/u.exec(line)?.[1]?.length;
+
+const findParentMapping = (
+  lines: VisibleCodeLine[],
+  lineIndex: number,
+): { index: number; key: string } | undefined => {
+  const childIndent = yamlKeyIndent(lines[lineIndex]?.text ?? '');
+  for (let index = lineIndex - 1; index >= 0; index -= 1) {
+    const text = lines[index]?.text ?? '';
+    if (DOCUMENT_BOUNDARY.test(text)) break;
+    if (yamlKeyIndent(text) >= childIndent) continue;
+    const key = yamlMappingKey(text);
+    if (key) return { index, key };
+  }
+  return undefined;
+};
+
+const isWorkflowScheduleCron = (
+  lines: VisibleCodeLine[],
+  lineIndex: number,
+): boolean => {
+  const schedule = findParentMapping(lines, lineIndex);
+  if (schedule?.key.toLowerCase() !== 'schedule') return false;
+  const on = findParentMapping(lines, schedule.index);
+  return on?.key.toLowerCase() === 'on';
+};
 
 const findParentSpec = (
   lines: VisibleCodeLine[],
   lineIndex: number,
 ): number | undefined => {
-  const scheduleIndent = yamlKeyIndent(lines[lineIndex]?.text ?? '');
-  for (let index = lineIndex - 1; index >= 0; index -= 1) {
-    const text = lines[index]?.text ?? '';
-    if (DOCUMENT_BOUNDARY.test(text)) break;
-    if (yamlKeyIndent(text) < scheduleIndent && isMappingKey(text, 'spec')) {
-      return index;
-    }
-  }
-  return undefined;
+  const parent = findParentMapping(lines, lineIndex);
+  return parent?.key.toLowerCase() === 'spec' ? parent.index : undefined;
 };
 
 const findOwningKind = (
@@ -114,7 +132,7 @@ const findOwningKind = (
     const text = lines[index]?.text ?? '';
     if (DOCUMENT_BOUNDARY.test(text)) break;
     const kind = yamlValue(text, 'kind');
-    if (kind && yamlKeyIndent(text) <= specIndent) return kind;
+    if (kind && yamlKeyIndent(text) === specIndent) return kind;
     const itemIndent = sequenceIndent(text);
     if (itemIndent !== undefined && itemIndent < specIndent) break;
   }
@@ -172,13 +190,16 @@ export const detectDialect = (input: DetectionInput): DetectionResult => {
       : { lineIndex: input.lineIndex, lines: input.lines };
   const { lineIndex, lines } = detectionContext;
 
-  if (key === 'cron' && WORKFLOW_PATH.test(filePath)) {
+  if (
+    key === 'cron' &&
+    WORKFLOW_PATH.test(filePath) &&
+    isWorkflowScheduleCron(lines, lineIndex)
+  ) {
+    const scheduleTimeZone = findWorkflowTimeZone(lines, lineIndex);
     return {
       confidence: 'high',
       dialect: 'github-actions',
-      ...(findWorkflowTimeZone(lines, lineIndex)
-        ? { scheduleTimeZone: findWorkflowTimeZone(lines, lineIndex) }
-        : {}),
+      ...(scheduleTimeZone ? { scheduleTimeZone } : {}),
     };
   }
 

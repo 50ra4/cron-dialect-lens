@@ -26,6 +26,38 @@ describe('detectDialect', () => {
     });
   });
 
+  it.each([
+    {
+      name: 'a reusable action input',
+      source: [
+        'jobs:',
+        '  invoke:',
+        '    uses: acme/workflows/.github/workflows/task.yml@main',
+        '    with:',
+        "      cron: '0 3 * * *'",
+      ],
+      target: 4,
+    },
+    {
+      name: 'an unrelated custom mapping',
+      source: ['settings:', "  cron: '0 3 * * *'"],
+      target: 1,
+    },
+  ])(
+    'does not treat cron under $name as a workflow trigger',
+    ({ source, target }) => {
+      expect(
+        detectDialect({
+          context: 'blob',
+          filePath: '.github/workflows/nightly.yml',
+          key: 'cron',
+          lineIndex: target,
+          lines: lines(...source),
+        }),
+      ).toEqual({ confidence: 'medium', dialect: 'unknown-posix' });
+    },
+  );
+
   it('detects a visible Kubernetes CronJob and spec.timeZone', () => {
     expect(
       detectDialect({
@@ -153,4 +185,45 @@ describe('detectDialect', () => {
       }),
     ).toEqual({ confidence: 'high', dialect: 'kubernetes' });
   });
+
+  it.each([
+    {
+      name: 'a nested Pod spec',
+      source: [
+        'kind: CronJob',
+        'spec:',
+        '  jobTemplate:',
+        '    spec:',
+        '      template:',
+        '        spec:',
+        '          containers: []',
+        '          config:',
+        "            schedule: '0 3 * * 1'",
+      ],
+      target: 8,
+    },
+    {
+      name: 'another mapping under the CronJob spec',
+      source: [
+        'kind: CronJob',
+        'spec:',
+        '  embeddedConfig:',
+        "    schedule: '0 3 * * 1'",
+      ],
+      target: 3,
+    },
+  ])(
+    'does not treat schedule under $name as CronJob spec.schedule',
+    ({ source, target }) => {
+      expect(
+        detectDialect({
+          context: 'blob',
+          filePath: 'deploy/cronjob.yaml',
+          key: 'schedule',
+          lineIndex: target,
+          lines: lines(...source),
+        }),
+      ).toEqual({ confidence: 'medium', dialect: 'unknown-posix' });
+    },
+  );
 });
