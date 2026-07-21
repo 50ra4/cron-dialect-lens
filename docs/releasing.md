@@ -24,9 +24,9 @@ npm run e2e
 distributable files from `extension/` in `extension.zip` at the repository
 root. Development icons are excluded. The build and package checks require
 `THIRD_PARTY_LICENSES.txt`, including versioned copyright notices and complete
-MIT terms for every runtime dependency. The same source, Node.js version, and
-lockfile always produce a byte-identical zip. `npm run zip` is a compatibility
-alias.
+MIT terms for every direct and transitive runtime dependency enumerated from
+`package-lock.json`. The same source, Node.js version, and lockfile always
+produce a byte-identical zip. `npm run zip` is a compatibility alias.
 
 Before tagging, complete [manual-test.md](./manual-test.md), verify that the
 manifest matches [web-store-permissions.md](./web-store-permissions.md), and

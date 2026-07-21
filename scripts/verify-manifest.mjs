@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import { createManifestVersion } from './manifest-version.mjs';
 import {
+  collectRuntimeDependencyVersions,
   THIRD_PARTY_LICENSE_FILE,
   validateThirdPartyLicenses,
 } from './third-party-licenses.mjs';
@@ -20,6 +21,9 @@ const extensionDirectory = fileURLToPath(
 );
 const manifestPath = resolve(extensionDirectory, 'manifest.json');
 const packagePath = fileURLToPath(new URL('../package.json', import.meta.url));
+const packageLockPath = fileURLToPath(
+  new URL('../package-lock.json', import.meta.url),
+);
 const thirdPartyLicensePath = resolve(
   extensionDirectory,
   THIRD_PARTY_LICENSE_FILE,
@@ -80,11 +84,13 @@ const addIconReferences = (icons, field) => {
 
 let manifest;
 let packageJson;
+let packageLock;
 let thirdPartyLicenses;
 try {
-  [manifest, packageJson, thirdPartyLicenses] = await Promise.all([
+  [manifest, packageJson, packageLock, thirdPartyLicenses] = await Promise.all([
     readFile(manifestPath, 'utf8').then(JSON.parse),
     readFile(packagePath, 'utf8').then(JSON.parse),
+    readFile(packageLockPath, 'utf8').then(JSON.parse),
     readFile(thirdPartyLicensePath, 'utf8'),
   ]);
 } catch (error) {
@@ -109,7 +115,7 @@ const expectedManifestVersion = createManifestVersion(packageJson.version);
 errors.push(
   ...validateThirdPartyLicenses(
     thirdPartyLicenses,
-    isRecord(packageJson.dependencies) ? packageJson.dependencies : undefined,
+    collectRuntimeDependencyVersions(packageLock),
   ),
 );
 

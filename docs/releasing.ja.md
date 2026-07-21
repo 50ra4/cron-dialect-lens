@@ -23,7 +23,7 @@ npm run e2e
 
 `npm run package` は build と manifest 検証を行い、`extension/` 内の配布対象ファイルだけを
 リポジトリ直下の `extension.zip` に格納する。開発用アイコンは含めない。build と package の検証では、
-全runtime依存のバージョン付き著作権表示とMITライセンス全文を含む
+`package-lock.json`から列挙した直接・推移runtime依存のバージョン付き著作権表示とMITライセンス全文を含む
 `THIRD_PARTY_LICENSES.txt`を必須とする。同一ソース・Node.js・lockfile からは同一内容の zip が生成される。
 `npm run zip` は互換用の別名である。
 
