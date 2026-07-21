@@ -1,4 +1,5 @@
 import type { CronWarning } from './types';
+import { isStandardCronExpression } from './standardCronFields';
 
 const OFFICIAL_MACROS = new Set([
   '@annually',
@@ -43,6 +44,16 @@ export const getKubernetesWarnings = (
         code: 'INVALID_EXPRESSION',
         message:
           'Kubernetes CronJob schedules must contain five cron fields or a supported macro.',
+        severity: 'error',
+      },
+    ];
+  }
+  if (!isStandardCronExpression(normalized)) {
+    return [
+      {
+        code: 'INVALID_EXPRESSION',
+        message:
+          'This expression uses cron syntax that Kubernetes CronJob does not support.',
         severity: 'error',
       },
     ];

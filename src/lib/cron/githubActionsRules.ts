@@ -1,4 +1,5 @@
 import type { CronWarning } from './types';
+import { isStandardCronExpression } from './standardCronFields';
 
 const warning = (
   code: CronWarning['code'],
@@ -40,6 +41,16 @@ export const getGitHubActionsWarnings = (expression: string): CronWarning[] => {
         'INVALID_EXPRESSION',
         'error',
         'GitHub Actions schedules must contain exactly five cron fields.',
+      ),
+    ];
+  }
+
+  if (!isStandardCronExpression(normalized)) {
+    return [
+      warning(
+        'INVALID_EXPRESSION',
+        'error',
+        'This expression uses cron syntax that GitHub Actions does not support.',
       ),
     ];
   }

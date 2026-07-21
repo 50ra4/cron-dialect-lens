@@ -19,6 +19,12 @@ describe('startCronLens', () => {
     expect(
       document.querySelectorAll('button[aria-label="Explain cron schedule"]'),
     ).toHaveLength(2);
+    const codeCells = document.querySelectorAll<HTMLElement>('.blob-code');
+    codeCells.forEach((cell) => {
+      expect(cell.querySelector('[data-cron-dialect-lens-button]')).toBeNull();
+    });
+    expect(codeCells[2]?.textContent).toBe("    - cron: '0 * * * *'");
+    expect(codeCells[7]?.textContent).toBe("  schedule: '0 3 * * 1'");
     const initialFirstButton = document.querySelector<HTMLButtonElement>(
       'button[aria-label="Explain cron schedule"]',
     );
@@ -129,8 +135,11 @@ describe('startCronLens', () => {
     expect(splitScheduleCells).toHaveLength(2);
     splitScheduleCells.forEach((cell) => {
       expect(
-        cell.querySelectorAll('[data-cron-dialect-lens-button]'),
+        cell.previousElementSibling?.querySelectorAll(
+          '[data-cron-dialect-lens-button]',
+        ),
       ).toHaveLength(1);
+      expect(cell.querySelector('[data-cron-dialect-lens-button]')).toBeNull();
     });
 
     runtime.cleanup();

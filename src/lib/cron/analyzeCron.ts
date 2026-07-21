@@ -167,11 +167,7 @@ export const analyzeCron = (
   const timeZone = effectiveTimeZone(normalizedCandidate);
   let nextRuns: CronAnalysis['nextRuns'] = [];
 
-  if (
-    candidate.dialect === 'kubernetes' &&
-    timeZone === undefined &&
-    !warnings.some(({ severity }) => severity === 'error')
-  ) {
+  if (candidate.dialect === 'kubernetes' && timeZone === undefined) {
     warnings.push({
       code: 'KUBERNETES_CONTROLLER_TIMEZONE_UNKNOWN',
       message:

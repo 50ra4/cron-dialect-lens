@@ -40,6 +40,35 @@ describe('scanGitHubCronCandidates', () => {
     });
   });
 
+  it('uses rendered path metadata when the blob ref contains slashes', () => {
+    const matches = scanGitHubCronCandidates(
+      loadFixture('actions-blob.html'),
+      new URL(
+        'https://github.com/acme/widgets/blob/feature/foo/.github/workflows/nightly.yml',
+      ),
+    );
+
+    expect(matches[0]?.candidate).toMatchObject({
+      confidence: 'high',
+      dialect: 'github-actions',
+      filePath: '.github/workflows/nightly.yml',
+    });
+  });
+
+  it('does not guess a blob path from a slash-containing ref without metadata', () => {
+    const document = loadFixture('actions-blob.html');
+    document.querySelector('[data-path]')?.remove();
+
+    expect(
+      scanGitHubCronCandidates(
+        document,
+        new URL(
+          'https://github.com/acme/widgets/blob/feature/foo/.github/workflows/nightly.yml',
+        ),
+      ),
+    ).toEqual([]);
+  });
+
   it('extracts Kubernetes context from a grid-style blob', () => {
     const document = loadFixture('kubernetes-blob.html');
     const matches = scanGitHubCronCandidates(
@@ -114,7 +143,8 @@ describe('scanGitHubCronCandidates', () => {
     ]);
     expect(new Set(matches.map(({ candidate }) => candidate.id)).size).toBe(2);
     matches.forEach(({ injectionTarget, lineElement }) => {
-      expect(lineElement).toBe(injectionTarget);
+      expect(lineElement).not.toBe(injectionTarget);
+      expect(injectionTarget.classList.contains('blob-num')).toBe(true);
     });
   });
 });

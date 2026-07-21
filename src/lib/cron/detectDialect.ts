@@ -167,17 +167,43 @@ const findWorkflowTimeZone = (
   lines: VisibleCodeLine[],
   lineIndex: number,
 ): string | undefined => {
-  const current = lines[lineIndex]?.text ?? '';
-  const cronIndent = current.search(/\S/u);
-  const upperBound = Math.min(lines.length, lineIndex + 13);
-
-  for (let index = lineIndex + 1; index < upperBound; index += 1) {
+  const schedule = findParentMapping(lines, lineIndex);
+  if (schedule?.key.toLowerCase() !== 'schedule') return undefined;
+  const fieldIndent = yamlKeyIndent(lines[lineIndex]?.text ?? '');
+  let itemStart = lineIndex;
+  for (let index = lineIndex; index > schedule.index; index -= 1) {
     const text = lines[index]?.text ?? '';
-    if (/^\s*[+-]?\s*-\s*cron\s*:/iu.test(text)) break;
+    if (
+      sequenceIndent(text) !== undefined &&
+      yamlKeyIndent(text) === fieldIndent
+    ) {
+      itemStart = index;
+      break;
+    }
+  }
+  const itemIndent = sequenceIndent(lines[itemStart]?.text ?? '');
+  if (itemIndent === undefined) return undefined;
+
+  for (let index = itemStart; index < lines.length; index += 1) {
+    const text = lines[index]?.text ?? '';
+    if (
+      index > itemStart &&
+      sequenceIndent(text) === itemIndent &&
+      yamlKeyIndent(text) === fieldIndent
+    ) {
+      break;
+    }
+    if (DOCUMENT_BOUNDARY.test(text)) break;
+    if (
+      text.trim().length > 0 &&
+      !text.trimStart().startsWith('#') &&
+      yamlKeyIndent(text) <= yamlKeyIndent(lines[schedule.index]?.text ?? '')
+    ) {
+      break;
+    }
+    if (yamlKeyIndent(text) !== fieldIndent) continue;
     const timeZone = yamlValue(text, 'timezone');
     if (timeZone) return timeZone;
-    const indent = text.search(/\S/u);
-    if (text.trim().length > 0 && indent >= 0 && indent < cronIndent) break;
   }
   return undefined;
 };

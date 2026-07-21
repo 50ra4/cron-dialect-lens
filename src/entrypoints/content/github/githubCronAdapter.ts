@@ -8,9 +8,7 @@ export type GitHubCronMatch = {
   lineElement: HTMLElement;
 };
 
-type GitHubPage =
-  | { context: 'blob'; filePathFromUrl?: string }
-  | { context: 'pull-request-diff' };
+type GitHubPage = { context: 'blob' } | { context: 'pull-request-diff' };
 
 type RecoveredLine = VisibleCodeLine & {
   element: HTMLElement;
@@ -19,19 +17,9 @@ type RecoveredLine = VisibleCodeLine & {
 
 const YAML_PATH = /\.ya?ml$/iu;
 
-const decodePath = (path: string): string => {
-  try {
-    return decodeURIComponent(path);
-  } catch {
-    return path;
-  }
-};
-
 const parsePage = (url: URL): GitHubPage | undefined => {
-  const blob = /^\/[^/]+\/[^/]+\/blob\/[^/]+\/(.+)$/u.exec(url.pathname);
-  if (blob?.[1]) {
-    return { context: 'blob', filePathFromUrl: decodePath(blob[1]) };
-  }
+  if (/^\/[^/]+\/[^/]+\/blob\/.+\/.+$/u.test(url.pathname))
+    return { context: 'blob' };
   if (/^\/[^/]+\/[^/]+\/pull\/\d+\/files\/?$/u.test(url.pathname)) {
     return { context: 'pull-request-diff' };
   }
@@ -43,6 +31,22 @@ const readLineNumberValue = (element: HTMLElement): string | undefined =>
   element.querySelector<HTMLElement>('[data-line-number]')?.dataset
     .lineNumber ??
   element.id.match(/(?:LC?|R)[-_]?(\d+)$/u)?.[1];
+
+const precedingGutter = (cell: HTMLElement): HTMLElement | undefined => {
+  let sibling = cell.previousElementSibling;
+  while (sibling) {
+    if (sibling instanceof HTMLElement) {
+      if (sibling.matches('.blob-num, [data-line-number]')) return sibling;
+      if (
+        sibling.matches('.blob-code, [data-code-cell], code, .react-code-text')
+      ) {
+        break;
+      }
+    }
+    sibling = sibling.previousElementSibling;
+  }
+  return undefined;
+};
 
 const precedingLineNumber = (cell: HTMLElement): string | undefined => {
   let sibling = cell.previousElementSibling;
@@ -166,7 +170,7 @@ const recoverUsingSelector = (
           ...(diffPane ? { diffPane } : {}),
           ...(diffSide ? { diffSide } : {}),
           element: injectionTarget,
-          injectionTarget,
+          injectionTarget: precedingGutter(injectionTarget) ?? injectionTarget,
           lineNumber: readLineNumber(element, injectionTarget),
           text: readCodeText(injectionTarget),
         };
@@ -266,7 +270,7 @@ export const scanGitHubCronCandidates = (
     if (!page) return [];
 
     if (page.context === 'blob') {
-      const filePath = visibleFilePath(document) ?? page.filePathFromUrl;
+      const filePath = visibleFilePath(document);
       return filePath ? matchesForFile(document, filePath, 'blob') : [];
     }
 

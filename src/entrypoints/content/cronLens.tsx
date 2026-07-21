@@ -10,6 +10,7 @@ import panelStyles from './cronLens.css?inline';
 import { scanGitHubCronCandidates } from './github/githubCronAdapter';
 
 const BUTTON_SELECTOR = '[data-cron-dialect-lens-button]';
+const BUTTON_SLOT_SELECTOR = '[data-cron-dialect-lens-slot]';
 const PANEL_SELECTOR = '[data-cron-dialect-lens-panel]';
 const SCAN_DELAY = 100;
 
@@ -87,6 +88,12 @@ const createButtonStyles = (document: Document): HTMLStyleElement => {
   const style = document.createElement('style');
   style.dataset.cronDialectLensStyles = '';
   style.textContent = `
+    ${BUTTON_SLOT_SELECTOR} {
+      box-sizing: border-box;
+      padding: 0 3px;
+      text-align: center;
+      user-select: none;
+    }
     ${BUTTON_SELECTOR} {
       box-sizing: border-box;
       width: 20px;
@@ -110,6 +117,26 @@ const createButtonStyles = (document: Document): HTMLStyleElement => {
   `;
   document.head.append(style);
   return style;
+};
+
+const createButtonSlot = (
+  document: Document,
+  injectionTarget: HTMLElement,
+  lineElement: HTMLElement,
+  candidateId: string,
+): HTMLElement => {
+  const slot = document.createElement(
+    injectionTarget === lineElement && lineElement.tagName === 'TD'
+      ? 'td'
+      : 'span',
+  );
+  slot.dataset.cronDialectLensSlot = candidateId;
+  if (injectionTarget === lineElement) {
+    lineElement.insertAdjacentElement('afterend', slot);
+  } else {
+    injectionTarget.append(slot);
+  }
+  return slot;
 };
 
 const defaultEnvironment = (document: Document): CronAnalysisEnvironment => ({
@@ -173,7 +200,12 @@ export const startCronLens = (
       button.addEventListener('mouseenter', open);
       button.addEventListener('focus', open);
       button.addEventListener('click', open);
-      injectionTarget.append(button);
+      createButtonSlot(
+        document,
+        injectionTarget,
+        lineElement,
+        candidate.id,
+      ).append(button);
       lineElement.dataset.cronDialectLensId = candidate.id;
       buttons.set(candidate.id, button);
     });
@@ -221,9 +253,13 @@ export const startCronLens = (
       document.defaultView?.removeEventListener('popstate', scheduleScan);
       document.defaultView?.removeEventListener('pageshow', scheduleScan);
       buttons.forEach((button) => {
-        const line = button.closest<HTMLElement>('[data-cron-dialect-lens-id]');
-        if (line) delete line.dataset.cronDialectLensId;
         button.remove();
+      });
+      document
+        .querySelectorAll<HTMLElement>('[data-cron-dialect-lens-id]')
+        .forEach((line) => delete line.dataset.cronDialectLensId);
+      document.querySelectorAll(BUTTON_SLOT_SELECTOR).forEach((slot) => {
+        slot.remove();
       });
       buttons.clear();
       buttonStyles.remove();

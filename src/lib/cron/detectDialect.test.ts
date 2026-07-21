@@ -26,6 +26,27 @@ describe('detectDialect', () => {
     });
   });
 
+  it('detects a GitHub Actions timezone declared before cron', () => {
+    expect(
+      detectDialect({
+        context: 'blob',
+        filePath: '.github/workflows/nightly.yml',
+        key: 'cron',
+        lineIndex: 3,
+        lines: lines(
+          'on:',
+          '  schedule:',
+          '    - timezone: Asia/Tokyo',
+          "      cron: '0 3 * * *'",
+        ),
+      }),
+    ).toEqual({
+      confidence: 'high',
+      dialect: 'github-actions',
+      scheduleTimeZone: 'Asia/Tokyo',
+    });
+  });
+
   it.each([
     {
       name: 'a reusable action input',

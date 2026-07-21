@@ -12,15 +12,17 @@
 ## GitHub Actions blob
 
 1. Open a `.github/workflows/*.yml` blob containing
-   `- cron: '*/5 * * * *'` and an adjacent `timezone: Asia/Tokyo`.
+   `- cron: '*/5 * * * *'` and an adjacent `timezone: Asia/Tokyo`. Repeat with
+   `timezone` before `cron` in the same schedule item.
 2. Confirm one Lens button appears beside the cron value and the source text is
    unchanged.
 3. Focus the button using Tab. Confirm the panel shows `github-actions`, high
    confidence, the expression, description, `Asia/Tokyo`, browser timezone,
    five `<time>` entries, and the local-processing disclosure.
 4. Repeat with no `timezone:` and confirm the effective timezone is UTC.
-5. Check `* * * * *`, `@daily`, `0 * * * *`, and a six-field expression. Confirm
-   the five-minute, macro, top-of-hour, and invalid-expression messages.
+5. Check `* * * * *`, `@daily`, `0 * * * *`, a six-field expression, and
+   unsupported `L` / `#` / `H` tokens. Confirm the five-minute, macro,
+   top-of-hour, and invalid-expression messages.
 
 ## Kubernetes blob
 
@@ -30,6 +32,7 @@
 3. Remove `timeZone`; confirm no next run is asserted and the controller
    timezone warning appears.
 4. Use `CRON_TZ=Asia/Tokyo 0 3 * * *`; confirm an error and no next runs.
+5. Use `0 0 L * *`, `0 0 * * 1#2`, and `H * * * *`; confirm each is rejected.
 
 ## Pull request and lifecycle
 
@@ -52,3 +55,5 @@
    does not block GitHub scrolling.
 5. Disable/uninstall the extension and reload. Confirm injected buttons and the
    panel are absent and no stored data remains.
+6. Select and copy a cron source line. Confirm the Lens icon is not included in
+   the copied YAML.
