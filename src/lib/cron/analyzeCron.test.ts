@@ -150,6 +150,25 @@ describe('analyzeCron', () => {
     );
   });
 
+  it.each([
+    ['github-actions', '@daily'],
+    ['unknown-posix', '0 0 3 * * *'],
+  ] as const)(
+    'suppresses the description when %s reports an error',
+    (dialect, expression) => {
+      const analysis = analyzeCron(
+        candidate(dialect, expression),
+        now,
+        environment,
+      );
+
+      expect(
+        analysis.warnings.some(({ severity }) => severity === 'error'),
+      ).toBe(true);
+      expect(analysis.description).toBeUndefined();
+    },
+  );
+
   it('uses the selected Japanese or English cronstrue locale', () => {
     const target = candidate('github-actions', '*/5 * * * *');
     const english = analyzeCron(target, now, environment).description;

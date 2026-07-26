@@ -33,10 +33,21 @@ describe('getKubernetesWarnings', () => {
     },
   );
 
-  it.each(['5-55/10 0 * * 1-5', '5 0 1 JAN MON'])(
+  it.each(['5-55/10 0 * * 1-5', '5 0 1 JAN MON', '0 0 ? * MON'])(
     'accepts Kubernetes standard syntax: %s',
     (expression) => {
       expect(getKubernetesWarnings(expression)).toEqual([]);
     },
   );
+
+  it('rejects day-of-week 7 outside the documented Kubernetes range', () => {
+    expect(getKubernetesWarnings('0 0 * * 7')).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'INVALID_EXPRESSION',
+          severity: 'error',
+        }),
+      ]),
+    );
+  });
 });

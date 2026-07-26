@@ -3,6 +3,7 @@ import actionsBlob from './fixtures/actions-blob.html?raw';
 import kubernetesBlob from './fixtures/kubernetes-blob.html?raw';
 import incompletePullRequest from './fixtures/pr-incomplete.html?raw';
 import pullRequestFiles from './fixtures/pr-files.html?raw';
+import reactMarkerPullRequest from './fixtures/pr-react-markers.html?raw';
 import splitPullRequest from './fixtures/pr-split.html?raw';
 
 const fixtures: Record<string, string> = {
@@ -10,6 +11,7 @@ const fixtures: Record<string, string> = {
   'kubernetes-blob.html': kubernetesBlob,
   'pr-incomplete.html': incompletePullRequest,
   'pr-files.html': pullRequestFiles,
+  'pr-react-markers.html': reactMarkerPullRequest,
   'pr-split.html': splitPullRequest,
 };
 
@@ -146,5 +148,31 @@ describe('scanGitHubCronCandidates', () => {
       expect(lineElement).not.toBe(injectionTarget);
       expect(injectionTarget.classList.contains('blob-num')).toBe(true);
     });
+  });
+
+  it('removes rendered diff markers before detecting both sides', () => {
+    const matches = scanGitHubCronCandidates(
+      loadFixture('pr-react-markers.html'),
+      new URL('https://github.com/acme/widgets/pull/42/files'),
+    );
+
+    expect(
+      matches.map(({ candidate }) => ({
+        confidence: candidate.confidence,
+        dialect: candidate.dialect,
+        expression: candidate.expression,
+      })),
+    ).toEqual([
+      {
+        confidence: 'high',
+        dialect: 'github-actions',
+        expression: '0 0 * * *',
+      },
+      {
+        confidence: 'high',
+        dialect: 'github-actions',
+        expression: '0 9 * * *',
+      },
+    ]);
   });
 });

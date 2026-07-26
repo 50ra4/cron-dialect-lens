@@ -12,7 +12,13 @@ const stripInlineComment = (value: string): string => {
       quote = quote === character ? undefined : (quote ?? character);
       continue;
     }
-    if (character === '#' && quote === undefined) return value.slice(0, index);
+    if (
+      character === '#' &&
+      quote === undefined &&
+      (index === 0 || /\s/u.test(value[index - 1] ?? ''))
+    ) {
+      return value.slice(0, index);
+    }
   }
 
   return value;
@@ -46,6 +52,9 @@ export const extractCronLine = (
     return undefined;
   }
 
+  if (/^[>|](?:[+-]?[1-9]?|[1-9][+-]?)$/u.test(rawExpression.trim())) {
+    return undefined;
+  }
   const expression = removeMatchingQuotes(stripInlineComment(rawExpression));
   if (expression.length === 0) return undefined;
   return { expression, key };

@@ -16,7 +16,7 @@ const includesZero = (minuteField: string): boolean => {
     if (end !== undefined) {
       const startNumber = Number(start);
       const endNumber = Number(end);
-      return startNumber === 0 || (startNumber <= 0 && endNumber >= 0);
+      return startNumber === 0 && endNumber >= 0;
     }
     return Number(base) === 0;
   });

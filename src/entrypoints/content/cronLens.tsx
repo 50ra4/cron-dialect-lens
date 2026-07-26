@@ -108,7 +108,9 @@ const createButtonStyles = (document: Document): HTMLStyleElement => {
       font: 12px/18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       vertical-align: middle;
     }
+    ${BUTTON_SELECTOR}::before { content: "◉"; }
     ${BUTTON_SELECTOR}[data-has-warning="true"] { color: #9a6700; }
+    ${BUTTON_SELECTOR}[data-has-warning="true"]::before { content: "⚠"; }
     ${BUTTON_SELECTOR}:hover,
     ${BUTTON_SELECTOR}:focus-visible {
       outline: 2px solid #0969da;
@@ -125,14 +127,10 @@ const createButtonSlot = (
   lineElement: HTMLElement,
   candidateId: string,
 ): HTMLElement => {
-  const slot = document.createElement(
-    injectionTarget === lineElement && lineElement.tagName === 'TD'
-      ? 'td'
-      : 'span',
-  );
+  const slot = document.createElement('span');
   slot.dataset.cronDialectLensSlot = candidateId;
   if (injectionTarget === lineElement) {
-    lineElement.insertAdjacentElement('afterend', slot);
+    lineElement.append(slot);
   } else {
     injectionTarget.append(slot);
   }
@@ -172,8 +170,6 @@ export const startCronLens = (
       if (existing?.isConnected) {
         analyses.set(existing, analysis);
         existing.dataset.hasWarning = String(analysis.warnings.length > 0);
-        const icon = analysis.warnings.length > 0 ? '⚠' : '◉';
-        if (existing.textContent !== icon) existing.textContent = icon;
         lineElement.dataset.cronDialectLensId = candidate.id;
         if (activeButton === existing && !panel.host.hidden) {
           panel.show(analysis, existing);
@@ -188,7 +184,6 @@ export const startCronLens = (
       button.dataset.hasWarning = String(analysis.warnings.length > 0);
       button.ariaLabel = 'Explain cron schedule';
       button.title = 'Explain cron schedule';
-      button.textContent = analysis.warnings.length > 0 ? '⚠' : '◉';
 
       analyses.set(button, analysis);
       const open = (): void => {

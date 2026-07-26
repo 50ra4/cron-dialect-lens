@@ -20,11 +20,11 @@ describe('startCronLens', () => {
       document.querySelectorAll('button[aria-label="Explain cron schedule"]'),
     ).toHaveLength(2);
     const codeCells = document.querySelectorAll<HTMLElement>('.blob-code');
-    codeCells.forEach((cell) => {
-      expect(cell.querySelector('[data-cron-dialect-lens-button]')).toBeNull();
-    });
     expect(codeCells[2]?.textContent).toBe("    - cron: '0 * * * *'");
     expect(codeCells[7]?.textContent).toBe("  schedule: '0 3 * * 1'");
+    document
+      .querySelectorAll<HTMLButtonElement>('[data-cron-dialect-lens-button]')
+      .forEach((button) => expect(button.textContent).toBe(''));
     const initialFirstButton = document.querySelector<HTMLButtonElement>(
       'button[aria-label="Explain cron schedule"]',
     );
@@ -140,6 +140,50 @@ describe('startCronLens', () => {
         ),
       ).toHaveLength(1);
       expect(cell.querySelector('[data-cron-dialect-lens-button]')).toBeNull();
+    });
+
+    runtime.cleanup();
+  });
+
+  it('keeps fallback table rows stable and refreshable across rescans', async () => {
+    document.documentElement.innerHTML = `
+      <body>
+        <div data-path="deploy/cronjob.yaml"></div>
+        <table>
+          <tr data-line-number="1"><td>1</td><td>kind: CronJob</td></tr>
+          <tr data-line-number="2"><td>2</td><td>spec:</td></tr>
+          <tr data-line-number="3"><td>3</td><td>  timeZone: UTC</td></tr>
+          <tr data-line-number="4"><td>4</td><td>  schedule: '0 3 * * 1'</td></tr>
+        </table>
+      </body>
+    `;
+    const runtime = startCronLens({
+      document,
+      environment: {
+        browserTimeZone: 'Asia/Tokyo',
+        language: 'en',
+      },
+      url: new URL(
+        'https://github.com/acme/widgets/blob/main/deploy/cronjob.yaml',
+      ),
+    });
+    const button = document.querySelector<HTMLButtonElement>(
+      'button[aria-label="Explain cron schedule"]',
+    );
+    expect(button).not.toBeNull();
+    expect(document.querySelectorAll('tr:last-child > td')).toHaveLength(2);
+
+    const kindCell = document.querySelector<HTMLElement>(
+      'tr:first-child > td:last-child',
+    );
+    expect(kindCell).not.toBeNull();
+    (kindCell as HTMLElement).textContent = 'kind: ConfigMap';
+    runtime.scan();
+    fireEvent.click(button as HTMLButtonElement);
+
+    const panelHost = document.querySelector('[data-cron-dialect-lens-panel]');
+    await waitFor(() => {
+      expect(panelHost?.shadowRoot?.textContent).toContain('unknown-posix');
     });
 
     runtime.cleanup();

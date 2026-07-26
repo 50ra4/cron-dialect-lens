@@ -203,11 +203,14 @@ export const analyzeCron = (
     (left, right) =>
       SEVERITY_ORDER[left.severity] - SEVERITY_ORDER[right.severity],
   );
+  const hasError = warnings.some(({ severity }) => severity === 'error');
 
   return {
     browserTimeZone: environment.browserTimeZone,
     candidate: normalizedCandidate,
-    description: describe(expression, environment.language),
+    description: hasError
+      ? undefined
+      : describe(expression, environment.language),
     effectiveTimeZone: timeZone,
     nextRuns,
     warnings,

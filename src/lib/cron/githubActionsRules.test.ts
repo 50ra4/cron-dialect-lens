@@ -26,6 +26,8 @@ describe('getGitHubActionsWarnings', () => {
     '0 0 L * *',
     '0 0 * * 1#2',
     'H * * * *',
+    '0 0 ? * MON',
+    '0 0 * * 7',
     '60 * * * *',
     '5 24 * * *',
   ])('rejects GitHub Actions unsupported syntax: %s', (expression) => {

@@ -23,6 +23,11 @@
 5. Check `* * * * *`, `@daily`, `0 * * * *`, a six-field expression, and
    unsupported `L` / `#` / `H` tokens. Confirm the five-minute, macro,
    top-of-hour, and invalid-expression messages.
+6. Use the unquoted value `0 0 * * 5#2`. Confirm the full expression remains
+   visible, an invalid-expression error appears, and no description or next
+   runs are shown.
+7. Use `cron: >-` or `cron: |`. Confirm no Lens button is added to the scalar
+   header line.
 
 ## Kubernetes blob
 
@@ -45,6 +50,8 @@
    button.
 5. Test an incomplete diff without `kind: CronJob`; confirm `unknown-posix`
    rather than Kubernetes.
+6. In a diff UI that renders `+` / `-` marker elements inside code cells,
+   confirm both old and new cron rows retain the correct dialect.
 
 ## Interaction, isolation, and cleanup
 

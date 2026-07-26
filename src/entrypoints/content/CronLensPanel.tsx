@@ -55,8 +55,11 @@ export const CronLensPanel = ({ analysis }: CronLensPanelProps) => (
       <section>
         <h2>Warnings</h2>
         <ul className="cron-lens-warnings">
-          {analysis.warnings.map((warning) => (
-            <li data-severity={warning.severity} key={warning.code}>
+          {analysis.warnings.map((warning, index) => (
+            <li
+              data-severity={warning.severity}
+              key={`${warning.code}:${warning.message}:${index}`}
+            >
               <span aria-hidden="true">
                 {warning.severity === 'error' ? '✕' : '⚠'}
               </span>{' '}

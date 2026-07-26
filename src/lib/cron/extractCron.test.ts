@@ -9,6 +9,8 @@ describe('extractCronLine', () => {
       'schedule',
       'CRON_TZ=Asia/Tokyo 0 3 * * *',
     ],
+    ['      - cron: 0 0 * * 5#2', 'cron', '0 0 * * 5#2'],
+    ['      - cron: 0 0 * * * # comment', 'cron', '0 0 * * *'],
   ])('extracts %s', (source, key, expression) => {
     expect(extractCronLine(source)).toEqual({ expression, key });
   });
@@ -19,6 +21,17 @@ describe('extractCronLine', () => {
       expect(extractCronLine(source)).toBeUndefined();
     },
   );
+
+  it.each([
+    'cron:',
+    'cron: |',
+    'cron: |-',
+    'cron: >',
+    'cron: >-',
+    'schedule: |+',
+  ])('ignores empty or block-scalar candidate %s', (source) => {
+    expect(extractCronLine(source)).toBeUndefined();
+  });
 });
 
 describe('createCronId', () => {

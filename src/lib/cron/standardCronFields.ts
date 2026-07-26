@@ -27,7 +27,7 @@ const FIELD_SPECS: readonly CronFieldSpec[] = [
     ],
   },
   {
-    maximum: 7,
+    maximum: 6,
     minimum: 0,
     names: ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'],
   },
@@ -67,17 +67,27 @@ const validFieldPart = (part: string, spec: CronFieldSpec): boolean => {
   return endValue !== undefined && startValue <= endValue;
 };
 
-const validField = (field: string, spec: CronFieldSpec): boolean =>
-  field.length > 0 &&
-  field.split(',').every((part) => validFieldPart(part, spec));
+const validField = (
+  field: string,
+  spec: CronFieldSpec,
+  allowQuestionMark: boolean,
+): boolean =>
+  (allowQuestionMark && field === '?') ||
+  (field.length > 0 &&
+    field.split(',').every((part) => validFieldPart(part, spec)));
 
-export const isStandardCronExpression = (expression: string): boolean => {
+export const isStandardCronExpression = (
+  expression: string,
+  options: { allowQuestionMark?: boolean } = {},
+): boolean => {
   const fields = expression.trim().split(/\s+/u);
   return (
     fields.length === FIELD_SPECS.length &&
     fields.every((field, index) => {
       const spec = FIELD_SPECS[index];
-      return spec !== undefined && validField(field, spec);
+      const allowQuestionMark =
+        options.allowQuestionMark === true && (index === 2 || index === 4);
+      return spec !== undefined && validField(field, spec, allowQuestionMark);
     })
   );
 };

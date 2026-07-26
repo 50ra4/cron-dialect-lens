@@ -47,4 +47,41 @@ describe('CronLensPanel', () => {
       '2026-01-01T00:05:00.000Z',
     );
   });
+
+  it('renders duplicate warning codes without React key errors', () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+
+    try {
+      render(
+        <CronLensPanel
+          analysis={{
+            ...analysis,
+            warnings: [
+              {
+                code: 'INVALID_EXPRESSION',
+                message: 'The expression is invalid.',
+                severity: 'error',
+              },
+              {
+                code: 'INVALID_EXPRESSION',
+                message: 'The timezone is invalid.',
+                severity: 'error',
+              },
+            ],
+          }}
+        />,
+      );
+
+      expect(screen.getByText('The expression is invalid.')).toBeVisible();
+      expect(screen.getByText('The timezone is invalid.')).toBeVisible();
+      expect(consoleError).not.toHaveBeenCalledWith(
+        expect.stringContaining('same key'),
+        expect.anything(),
+      );
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
 });

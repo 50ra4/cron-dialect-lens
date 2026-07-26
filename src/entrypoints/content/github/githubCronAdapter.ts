@@ -42,6 +42,7 @@ const precedingGutter = (cell: HTMLElement): HTMLElement | undefined => {
       ) {
         break;
       }
+      if (cell.tagName === 'TD' && sibling.tagName === 'TD') return sibling;
     }
     sibling = sibling.previousElementSibling;
   }
@@ -91,7 +92,11 @@ const findCodeCells = (line: HTMLElement): HTMLElement[] => {
     const cells = [...line.querySelectorAll<HTMLElement>(selector)];
     if (cells.length > 0) return cells;
   }
-  const fallback = line.querySelector<HTMLElement>('td:last-child');
+  const fallback = [
+    ...line.querySelectorAll<HTMLElement>(
+      'td:not([data-cron-dialect-lens-slot])',
+    ),
+  ].at(-1);
   return fallback ? [fallback] : [];
 };
 
@@ -99,8 +104,10 @@ const readCodeText = (cell: HTMLElement): string => {
   const copy = cell.cloneNode(true);
   if (!(copy instanceof HTMLElement)) return cell.textContent ?? '';
   copy
-    .querySelectorAll('[data-cron-dialect-lens-button]')
-    .forEach((button) => button.remove());
+    .querySelectorAll(
+      '[data-code-marker], [data-cron-dialect-lens-button], [data-cron-dialect-lens-slot]',
+    )
+    .forEach((injected) => injected.remove());
   return copy.textContent ?? '';
 };
 

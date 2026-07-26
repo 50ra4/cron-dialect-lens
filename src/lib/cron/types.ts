@@ -24,8 +24,7 @@ export type CronWarningCode =
   | 'KUBERNETES_CONTROLLER_TIMEZONE_UNKNOWN'
   | 'KUBERNETES_TZ_IN_SCHEDULE'
   | 'DIALECT_UNCERTAIN'
-  | 'INVALID_EXPRESSION'
-  | 'NEXT_RUN_UNAVAILABLE';
+  | 'INVALID_EXPRESSION';
 
 export type CronWarning = {
   code: CronWarningCode;
@@ -49,7 +48,6 @@ export type CronAnalysis = {
 export type VisibleCodeLine = {
   diffPane?: DiffLinePane;
   diffSide?: DiffLineSide;
-  element?: HTMLElement;
   lineNumber?: number;
   text: string;
 };

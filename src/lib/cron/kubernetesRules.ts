@@ -48,7 +48,7 @@ export const getKubernetesWarnings = (
       },
     ];
   }
-  if (!isStandardCronExpression(normalized)) {
+  if (!isStandardCronExpression(normalized, { allowQuestionMark: true })) {
     return [
       {
         code: 'INVALID_EXPRESSION',
