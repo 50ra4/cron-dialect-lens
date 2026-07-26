@@ -36,9 +36,7 @@ const inferredDiffSide = (
 };
 
 const codeText = (line: VisibleCodeLine): string =>
-  line.diffSide === undefined && legacyDiffMarker(line.text)
-    ? line.text.slice(1)
-    : line.text;
+  legacyDiffMarker(line.text) ? line.text.slice(1) : line.text;
 
 const currentSideContext = (
   lines: VisibleCodeLine[],

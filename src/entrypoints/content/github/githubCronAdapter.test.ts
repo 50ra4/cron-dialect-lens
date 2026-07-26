@@ -150,7 +150,7 @@ describe('scanGitHubCronCandidates', () => {
     });
   });
 
-  it('removes rendered diff markers before detecting both sides', () => {
+  it('removes rendered and text diff markers before detecting both sides', () => {
     const matches = scanGitHubCronCandidates(
       loadFixture('pr-react-markers.html'),
       new URL('https://github.com/acme/widgets/pull/42/files'),
@@ -163,6 +163,16 @@ describe('scanGitHubCronCandidates', () => {
         expression: candidate.expression,
       })),
     ).toEqual([
+      {
+        confidence: 'high',
+        dialect: 'github-actions',
+        expression: '0 0 * * *',
+      },
+      {
+        confidence: 'high',
+        dialect: 'github-actions',
+        expression: '0 9 * * *',
+      },
       {
         confidence: 'high',
         dialect: 'github-actions',

@@ -113,6 +113,29 @@ describe('detectDialect', () => {
     ).toEqual({ confidence: 'low', dialect: 'unknown-posix' });
   });
 
+  it('removes text diff markers even when the side is already known', () => {
+    expect(
+      detectDialect({
+        context: 'pull-request-diff',
+        filePath: '.github/workflows/nightly.yml',
+        key: 'cron',
+        lineIndex: 3,
+        lines: [
+          { diffSide: 'context', text: ' on:' },
+          { diffSide: 'context', text: '   schedule:' },
+          {
+            diffSide: 'deletion',
+            text: "-    - cron: '0 0 * * *'",
+          },
+          {
+            diffSide: 'addition',
+            text: "+    - cron: '0 9 * * *'",
+          },
+        ],
+      }),
+    ).toEqual({ confidence: 'high', dialect: 'github-actions' });
+  });
+
   it.each([
     {
       expected: {

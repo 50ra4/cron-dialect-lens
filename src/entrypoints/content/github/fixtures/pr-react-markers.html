@@ -19,5 +19,23 @@
         </tr>
       </table>
     </section>
+    <section class="file" data-path=".github/workflows/nightly.yml">
+      <table>
+        <tr>
+          <td class="blob-code blob-code-context"> on:</td>
+        </tr>
+        <tr>
+          <td class="blob-code blob-code-context">   schedule:</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code" data-line-type="deletion">-    - cron: '0 0 * * *'</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code" data-line-type="addition">+    - cron: '0 9 * * *'</td>
+        </tr>
+      </table>
+    </section>
   </body>
 </html>
