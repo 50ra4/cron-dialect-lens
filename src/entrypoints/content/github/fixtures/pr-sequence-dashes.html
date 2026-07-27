@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+  <body>
+    <section class="file" data-path="deploy/classic.yaml">
+      <table>
+        <tr>
+          <td class="blob-code" data-line-type="deletion">- kind: CronJob</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code" data-line-type="context">&nbsp;&nbsp;spec:</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code" data-line-type="context">&nbsp;&nbsp;&nbsp;&nbsp;timeZone: Asia/Tokyo</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code" data-line-type="deletion">&nbsp;&nbsp;&nbsp;&nbsp;schedule: '0 3 * * 1'</td>
+        </tr>
+      </table>
+    </section>
+    <section class="file" data-path="deploy/text-markers.yaml">
+      <table>
+        <tr>
+          <td class="blob-code blob-code-context">&#32;- kind: CronJob</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code blob-code-context">&#32;&nbsp;&nbsp;spec:</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code blob-code-context">&#32;&nbsp;&nbsp;&nbsp;&nbsp;timeZone: Asia/Tokyo</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code" data-line-type="addition">+&nbsp;&nbsp;&nbsp;&nbsp;schedule: '0 3 * * 1'</td>
+        </tr>
+      </table>
+    </section>
+  </body>
+</html>

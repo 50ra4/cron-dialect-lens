@@ -22,22 +22,6 @@ const YAML_PATH = /\.ya?ml$/iu;
 const WORKFLOW_PATH = /^\.github\/workflows\/.+\.ya?ml$/iu;
 const DOCUMENT_BOUNDARY = /^\s*---\s*$/u;
 
-const legacyDiffMarker = (text: string): '+' | '-' | undefined => {
-  const marker = text[0];
-  return marker === '+' || marker === '-' ? marker : undefined;
-};
-
-const inferredDiffSide = (
-  line: VisibleCodeLine,
-): VisibleCodeLine['diffSide'] => {
-  if (line.diffSide) return line.diffSide;
-  const marker = legacyDiffMarker(line.text);
-  return marker === '+' ? 'addition' : marker === '-' ? 'deletion' : undefined;
-};
-
-const codeText = (line: VisibleCodeLine): string =>
-  legacyDiffMarker(line.text) ? line.text.slice(1) : line.text;
-
 const currentSideContext = (
   lines: VisibleCodeLine[],
   lineIndex: number,
@@ -45,7 +29,7 @@ const currentSideContext = (
   const targetLine = lines[lineIndex] ?? { text: '' };
   const targetPane = targetLine.diffPane;
   const targetSide =
-    targetPane === 'left' || inferredDiffSide(targetLine) === 'deletion'
+    targetPane === 'left' || targetLine.diffSide === 'deletion'
       ? 'deletion'
       : 'addition';
   const oppositeSide = targetSide === 'addition' ? 'deletion' : 'addition';
@@ -56,7 +40,7 @@ const currentSideContext = (
         (targetPane === undefined ||
           line.diffPane === undefined ||
           line.diffPane === targetPane) &&
-        inferredDiffSide(line) !== oppositeSide,
+        line.diffSide !== oppositeSide,
     );
   const selectedLineIndex = selected.findIndex(
     ({ originalIndex }) => originalIndex === lineIndex,
@@ -64,10 +48,7 @@ const currentSideContext = (
 
   return {
     lineIndex: selectedLineIndex,
-    lines: selected.map(({ line }) => ({
-      ...line,
-      text: codeText(line),
-    })),
+    lines: selected.map(({ line }) => line),
   };
 };
 

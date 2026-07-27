@@ -108,32 +108,38 @@ describe('detectDialect', () => {
         filePath: 'deploy/cronjob.yaml',
         key: 'schedule',
         lineIndex: 0,
-        lines: lines("+  schedule: '0 3 * * 1'"),
+        lines: [
+          {
+            diffSide: 'addition',
+            text: "  schedule: '0 3 * * 1'",
+          },
+        ],
       }),
     ).toEqual({ confidence: 'low', dialect: 'unknown-posix' });
   });
 
-  it('removes text diff markers even when the side is already known', () => {
+  it('preserves a column-zero YAML sequence dash in normalized diff text', () => {
     expect(
       detectDialect({
         context: 'pull-request-diff',
-        filePath: '.github/workflows/nightly.yml',
-        key: 'cron',
+        filePath: 'deploy/cronjobs.yaml',
+        key: 'schedule',
         lineIndex: 3,
         lines: [
-          { diffSide: 'context', text: ' on:' },
-          { diffSide: 'context', text: '   schedule:' },
-          {
-            diffSide: 'deletion',
-            text: "-    - cron: '0 0 * * *'",
-          },
+          { diffSide: 'context', text: '- kind: CronJob' },
+          { diffSide: 'context', text: '  spec:' },
+          { diffSide: 'context', text: '    timeZone: Asia/Tokyo' },
           {
             diffSide: 'addition',
-            text: "+    - cron: '0 9 * * *'",
+            text: "    schedule: '0 3 * * 1'",
           },
         ],
       }),
-    ).toEqual({ confidence: 'high', dialect: 'github-actions' });
+    ).toEqual({
+      confidence: 'high',
+      dialect: 'kubernetes',
+      scheduleTimeZone: 'Asia/Tokyo',
+    });
   });
 
   it.each([
@@ -145,11 +151,14 @@ describe('detectDialect', () => {
       },
       name: 'uses only added context for an added schedule',
       source: [
-        '+kind: CronJob',
-        '+spec:',
-        '-  timeZone: UTC',
-        '+  timeZone: Asia/Tokyo',
-        "+  schedule: '0 3 * * 1'",
+        { diffSide: 'addition' as const, text: 'kind: CronJob' },
+        { diffSide: 'addition' as const, text: 'spec:' },
+        { diffSide: 'deletion' as const, text: '  timeZone: UTC' },
+        { diffSide: 'addition' as const, text: '  timeZone: Asia/Tokyo' },
+        {
+          diffSide: 'addition' as const,
+          text: "  schedule: '0 3 * * 1'",
+        },
       ],
       target: 4,
     },
@@ -157,10 +166,13 @@ describe('detectDialect', () => {
       expected: { confidence: 'low', dialect: 'unknown-posix' },
       name: 'ignores a removed kind for an added schedule',
       source: [
-        '-kind: CronJob',
-        '+kind: ConfigMap',
-        '+spec:',
-        "+  schedule: '0 3 * * 1'",
+        { diffSide: 'deletion' as const, text: 'kind: CronJob' },
+        { diffSide: 'addition' as const, text: 'kind: ConfigMap' },
+        { diffSide: 'addition' as const, text: 'spec:' },
+        {
+          diffSide: 'addition' as const,
+          text: "  schedule: '0 3 * * 1'",
+        },
       ],
       target: 3,
     },
@@ -171,7 +183,7 @@ describe('detectDialect', () => {
         filePath: 'deploy/cronjob.yaml',
         key: 'schedule',
         lineIndex: target,
-        lines: lines(...source),
+        lines: source,
       }),
     ).toEqual(expected);
   });

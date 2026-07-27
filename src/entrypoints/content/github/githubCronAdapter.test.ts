@@ -4,6 +4,7 @@ import kubernetesBlob from './fixtures/kubernetes-blob.html?raw';
 import incompletePullRequest from './fixtures/pr-incomplete.html?raw';
 import pullRequestFiles from './fixtures/pr-files.html?raw';
 import reactMarkerPullRequest from './fixtures/pr-react-markers.html?raw';
+import sequenceDashPullRequest from './fixtures/pr-sequence-dashes.html?raw';
 import splitPullRequest from './fixtures/pr-split.html?raw';
 
 const fixtures: Record<string, string> = {
@@ -12,6 +13,7 @@ const fixtures: Record<string, string> = {
   'pr-incomplete.html': incompletePullRequest,
   'pr-files.html': pullRequestFiles,
   'pr-react-markers.html': reactMarkerPullRequest,
+  'pr-sequence-dashes.html': sequenceDashPullRequest,
   'pr-split.html': splitPullRequest,
 };
 
@@ -182,6 +184,32 @@ describe('scanGitHubCronCandidates', () => {
         confidence: 'high',
         dialect: 'github-actions',
         expression: '0 9 * * *',
+      },
+    ]);
+  });
+
+  it('preserves YAML sequence dashes with rendered or text diff markers', () => {
+    const matches = scanGitHubCronCandidates(
+      loadFixture('pr-sequence-dashes.html'),
+      new URL('https://github.com/acme/widgets/pull/42/files'),
+    );
+
+    expect(
+      matches.map(({ candidate }) => ({
+        confidence: candidate.confidence,
+        dialect: candidate.dialect,
+        scheduleTimeZone: candidate.scheduleTimeZone,
+      })),
+    ).toEqual([
+      {
+        confidence: 'high',
+        dialect: 'kubernetes',
+        scheduleTimeZone: 'Asia/Tokyo',
+      },
+      {
+        confidence: 'high',
+        dialect: 'kubernetes',
+        scheduleTimeZone: 'Asia/Tokyo',
       },
     ]);
   });

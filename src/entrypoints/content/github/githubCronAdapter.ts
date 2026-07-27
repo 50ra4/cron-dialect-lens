@@ -15,6 +15,10 @@ type RecoveredLine = VisibleCodeLine & {
   injectionTarget: HTMLElement;
 };
 
+type RawRecoveredLine = RecoveredLine & {
+  textMarkerHint: boolean;
+};
+
 const YAML_PATH = /\.ya?ml$/iu;
 
 const parsePage = (url: URL): GitHubPage | undefined => {
@@ -163,27 +167,74 @@ const readDiffSide = (
   return undefined;
 };
 
+const diffMarker = (
+  side: VisibleCodeLine['diffSide'],
+): '+' | '-' | ' ' | undefined => {
+  switch (side) {
+    case 'addition':
+      return '+';
+    case 'deletion':
+      return '-';
+    case 'context':
+      return ' ';
+    default:
+      return undefined;
+  }
+};
+
 const recoverUsingSelector = (
   root: ParentNode,
   selector: string,
-): RecoveredLine[] =>
-  [...root.querySelectorAll<HTMLElement>(selector)].flatMap((element) =>
-    findCodeCells(element).map(
-      (injectionTarget, cellIndex, cells): RecoveredLine => {
-        const diffSide = readDiffSide(element, injectionTarget);
-        const diffPane =
-          cells.length > 1 ? (cellIndex === 0 ? 'left' : 'right') : undefined;
-        return {
-          ...(diffPane ? { diffPane } : {}),
-          ...(diffSide ? { diffSide } : {}),
-          element: injectionTarget,
-          injectionTarget: precedingGutter(injectionTarget) ?? injectionTarget,
-          lineNumber: readLineNumber(element, injectionTarget),
-          text: readCodeText(injectionTarget),
-        };
-      },
-    ),
+): RecoveredLine[] => {
+  const recovered = [...root.querySelectorAll<HTMLElement>(selector)].flatMap(
+    (element) =>
+      findCodeCells(element).map(
+        (injectionTarget, cellIndex, cells): RawRecoveredLine => {
+          const diffSide = readDiffSide(element, injectionTarget);
+          const diffPane =
+            cells.length > 1 ? (cellIndex === 0 ? 'left' : 'right') : undefined;
+          const hasRenderedMarker =
+            injectionTarget.querySelector('[data-code-marker]') !== null;
+          const textMarkerHint =
+            !hasRenderedMarker &&
+            [
+              injectionTarget.dataset.diffSide,
+              injectionTarget.dataset.lineType,
+              injectionTarget.dataset.codeMarker,
+              element.dataset.diffSide,
+              element.dataset.lineType,
+            ].some((value) => normalizeDiffSide(value) !== undefined);
+          return {
+            ...(diffPane ? { diffPane } : {}),
+            ...(diffSide ? { diffSide } : {}),
+            element: injectionTarget,
+            injectionTarget:
+              precedingGutter(injectionTarget) ?? injectionTarget,
+            lineNumber: readLineNumber(element, injectionTarget),
+            text: readCodeText(injectionTarget),
+            textMarkerHint,
+          };
+        },
+      ),
   );
+
+  const hasTextMarkers = recovered.some((line) => {
+    if (!line.textMarkerHint) return false;
+    if (line.diffSide === 'addition') return line.text.startsWith('+');
+    return line.diffSide === 'deletion' && line.text.startsWith('--');
+  });
+
+  return recovered.map(({ textMarkerHint: _, ...line }): RecoveredLine => {
+    const marker = diffMarker(line.diffSide);
+    return {
+      ...line,
+      text:
+        hasTextMarkers && marker !== undefined && line.text.startsWith(marker)
+          ? line.text.slice(1)
+          : line.text,
+    };
+  });
+};
 
 const recoverLines = (root: ParentNode): RecoveredLine[] => {
   for (const selector of [
