@@ -198,17 +198,38 @@ describe('scanGitHubCronCandidates', () => {
       matches.map(({ candidate }) => ({
         confidence: candidate.confidence,
         dialect: candidate.dialect,
+        filePath: candidate.filePath,
         scheduleTimeZone: candidate.scheduleTimeZone,
       })),
     ).toEqual([
       {
         confidence: 'high',
         dialect: 'kubernetes',
+        filePath: 'deploy/classic.yaml',
         scheduleTimeZone: 'Asia/Tokyo',
       },
       {
         confidence: 'high',
         dialect: 'kubernetes',
+        filePath: 'deploy/text-markers.yaml',
+        scheduleTimeZone: 'Asia/Tokyo',
+      },
+      {
+        confidence: 'high',
+        dialect: 'kubernetes',
+        filePath: 'deploy/deletion-only.yaml',
+        scheduleTimeZone: 'Asia/Tokyo',
+      },
+      {
+        confidence: 'high',
+        dialect: 'kubernetes',
+        filePath: 'deploy/markerless-plus-key.yaml',
+        scheduleTimeZone: 'Asia/Tokyo',
+      },
+      {
+        confidence: 'high',
+        dialect: 'kubernetes',
+        filePath: 'deploy/context-only.yaml',
         scheduleTimeZone: 'Asia/Tokyo',
       },
     ]);

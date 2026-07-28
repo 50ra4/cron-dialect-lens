@@ -39,5 +39,62 @@
         </tr>
       </table>
     </section>
+    <section class="file" data-path="deploy/deletion-only.yaml">
+      <table>
+        <tr>
+          <td class="blob-code" data-line-type="context">&#32;kind: CronJob</td>
+        </tr>
+        <tr>
+          <td class="blob-code" data-line-type="deletion">-spec:</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code" data-line-type="context">&#32;&nbsp;&nbsp;timeZone: Asia/Tokyo</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code" data-line-type="deletion">-&nbsp;&nbsp;schedule: '0 3 * * 1'</td>
+        </tr>
+      </table>
+    </section>
+    <section class="file" data-path="deploy/markerless-plus-key.yaml">
+      <table>
+        <tr>
+          <td class="blob-code" data-line-type="context">kind: CronJob</td>
+        </tr>
+        <tr>
+          <td class="blob-code" data-line-type="context">spec:</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code" data-line-type="context">&#32;&#32;timeZone: Asia/Tokyo</td>
+        </tr>
+        <tr>
+          <td class="blob-code" data-line-type="addition">+plus: true</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code" data-line-type="addition">&#32;&#32;schedule: '0 3 * * 1'</td>
+        </tr>
+      </table>
+    </section>
+    <section class="file" data-path="deploy/context-only.yaml">
+      <table>
+        <tr>
+          <td class="blob-code" data-line-type="context">&#32;kind: CronJob</td>
+        </tr>
+        <tr>
+          <td class="blob-code" data-line-type="context">&#32;spec:</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code" data-line-type="context">&#32;&nbsp;&nbsp;timeZone: Asia/Tokyo</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code" data-line-type="context">&#32;&nbsp;&nbsp;schedule: '0 3 * * 1'</td>
+        </tr>
+      </table>
+    </section>
   </body>
 </html>

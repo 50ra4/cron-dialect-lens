@@ -218,11 +218,16 @@ const recoverUsingSelector = (
       ),
   );
 
-  const hasTextMarkers = recovered.some((line) => {
-    if (!line.textMarkerHint) return false;
-    if (line.diffSide === 'addition') return line.text.startsWith('+');
-    return line.diffSide === 'deletion' && line.text.startsWith('--');
-  });
+  const sidedLines = recovered.filter(
+    (line) => diffMarker(line.diffSide) !== undefined,
+  );
+  const hasTextMarkers =
+    recovered.some((line) => line.textMarkerHint) &&
+    sidedLines.length > 0 &&
+    sidedLines.every((line) => {
+      const marker = diffMarker(line.diffSide);
+      return marker !== undefined && line.text.startsWith(marker);
+    });
 
   return recovered.map(({ textMarkerHint: _, ...line }): RecoveredLine => {
     const marker = diffMarker(line.diffSide);
