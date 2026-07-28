@@ -232,6 +232,12 @@ describe('scanGitHubCronCandidates', () => {
         filePath: 'deploy/context-only.yaml',
         scheduleTimeZone: 'Asia/Tokyo',
       },
+      {
+        confidence: 'high',
+        dialect: 'kubernetes',
+        filePath: 'deploy/split-empty.yaml',
+        scheduleTimeZone: 'Asia/Tokyo',
+      },
     ]);
   });
 });

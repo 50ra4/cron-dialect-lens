@@ -219,7 +219,7 @@ const recoverUsingSelector = (
   );
 
   const sidedLines = recovered.filter(
-    (line) => diffMarker(line.diffSide) !== undefined,
+    (line) => diffMarker(line.diffSide) !== undefined && line.text.length > 0,
   );
   const hasTextMarkers =
     recovered.some((line) => line.textMarkerHint) &&
