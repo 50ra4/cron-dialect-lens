@@ -33,21 +33,32 @@ describe('getKubernetesWarnings', () => {
     },
   );
 
-  it.each(['5-55/10 0 * * 1-5', '5 0 1 JAN MON', '0 0 ? * MON'])(
-    'accepts Kubernetes standard syntax: %s',
+  it.each([
+    '5-55/10 0 * * 1-5',
+    '5 0 1 JAN MON',
+    '0 0 ? * MON',
+    '0 0 * * 0',
+    '0 0 * * 6',
+    '0 0 * * 0-6',
+    '0 0 * * SUN',
+    '0 0 * * SAT',
+  ])('accepts Kubernetes standard syntax: %s', (expression) => {
+    expect(getKubernetesWarnings(expression)).toEqual([]);
+  });
+
+  it.each(['0 0 * * 7', '0 0 * * 0-7'])(
+    'explains the unsupported Kubernetes day-of-week range: %s',
     (expression) => {
-      expect(getKubernetesWarnings(expression)).toEqual([]);
+      expect(getKubernetesWarnings(expression)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'INVALID_EXPRESSION',
+            message:
+              'Kubernetes CronJob day-of-week must use 0-6 or SUN-SAT; 7 is not allowed (use 0 or SUN for Sunday).',
+            severity: 'error',
+          }),
+        ]),
+      );
     },
   );
-
-  it('rejects day-of-week 7 outside the documented Kubernetes range', () => {
-    expect(getKubernetesWarnings('0 0 * * 7')).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 'INVALID_EXPRESSION',
-          severity: 'error',
-        }),
-      ]),
-    );
-  });
 });

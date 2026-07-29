@@ -15,19 +15,27 @@ describe('getGitHubActionsWarnings', () => {
     expect(getGitHubActionsWarnings('5 * * * *')).toEqual([]);
   });
 
-  it.each(['5-55/10 0 * * 1-5', '5 0 1 JAN MON'])(
-    'accepts GitHub Actions standard syntax: %s',
-    (expression) => {
-      expect(getGitHubActionsWarnings(expression)).toEqual([]);
-    },
-  );
+  it.each([
+    '5-55/10 0 * * 1-5',
+    '5 0 1 JAN MON',
+    '0 0 * * 0',
+    '0 0 * * 6',
+    '0 0 * * 0-6',
+    '0 0 * * SUN',
+    '0 0 * * SAT',
+  ])('accepts GitHub Actions standard syntax: %s', (expression) => {
+    expect(
+      getGitHubActionsWarnings(expression).filter(
+        ({ severity }) => severity === 'error',
+      ),
+    ).toEqual([]);
+  });
 
   it.each([
     '0 0 L * *',
     '0 0 * * 1#2',
     'H * * * *',
     '0 0 ? * MON',
-    '0 0 * * 7',
     '60 * * * *',
     '5 24 * * *',
   ])('rejects GitHub Actions unsupported syntax: %s', (expression) => {
@@ -40,4 +48,20 @@ describe('getGitHubActionsWarnings', () => {
       ]),
     );
   });
+
+  it.each(['0 0 * * 7', '0 0 * * 0-7'])(
+    'explains the unsupported GitHub Actions day-of-week range: %s',
+    (expression) => {
+      expect(getGitHubActionsWarnings(expression)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'INVALID_EXPRESSION',
+            message:
+              'GitHub Actions day-of-week must use 0-6 or SUN-SAT; 7 is not allowed (use 0 or SUN for Sunday).',
+            severity: 'error',
+          }),
+        ]),
+      );
+    },
+  );
 });

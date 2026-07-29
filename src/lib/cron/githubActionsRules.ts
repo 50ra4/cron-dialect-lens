@@ -1,5 +1,8 @@
 import type { CronWarning } from './types';
-import { isStandardCronExpression } from './standardCronFields';
+import {
+  findStandardCronFieldViolation,
+  formatStandardCronFieldViolation,
+} from './standardCronFields';
 
 const warning = (
   code: CronWarning['code'],
@@ -45,12 +48,13 @@ export const getGitHubActionsWarnings = (expression: string): CronWarning[] => {
     ];
   }
 
-  if (!isStandardCronExpression(normalized)) {
+  const violation = findStandardCronFieldViolation(normalized);
+  if (violation) {
     return [
       warning(
         'INVALID_EXPRESSION',
         'error',
-        'This expression uses cron syntax that GitHub Actions does not support.',
+        formatStandardCronFieldViolation('GitHub Actions', violation),
       ),
     ];
   }

@@ -133,6 +133,67 @@ describe('analyzeCron', () => {
     );
   });
 
+  it.each([
+    '0 0 * * 0',
+    '0 0 * * 6',
+    '0 0 * * 7',
+    '0 0 * * 0-6',
+    '0 0 * * 0-7',
+    '0 0 * * SUN',
+    '0 0 * * SAT',
+  ])(
+    'keeps the documented unknown POSIX day-of-week compatibility for %s',
+    (expression) => {
+      const analysis = analyzeCron(
+        candidate('unknown-posix', expression),
+        now,
+        environment,
+      );
+
+      expect(
+        analysis.warnings.some(({ severity }) => severity === 'error'),
+      ).toBe(false);
+      expect(analysis.description).toBeDefined();
+    },
+  );
+
+  it('keeps day-of-week 7 as an intentional dialect difference', () => {
+    const github = analyzeCron(
+      candidate('github-actions', '0 0 * * 7'),
+      now,
+      environment,
+    );
+    const kubernetes = analyzeCron(
+      candidate('kubernetes', '0 0 * * 7', 'UTC'),
+      now,
+      environment,
+    );
+    const unknown = analyzeCron(
+      candidate('unknown-posix', '0 0 * * 7'),
+      now,
+      environment,
+    );
+
+    for (const strictAnalysis of [github, kubernetes]) {
+      expect(strictAnalysis.warnings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'INVALID_EXPRESSION',
+            message: expect.stringContaining(
+              'day-of-week must use 0-6 or SUN-SAT',
+            ),
+            severity: 'error',
+          }),
+        ]),
+      );
+      expect(strictAnalysis.description).toBeUndefined();
+    }
+    expect(unknown.warnings.map(({ code }) => code)).toEqual([
+      'DIALECT_UNCERTAIN',
+    ]);
+    expect(unknown.description).toBeDefined();
+  });
+
   it('rejects a non-five-field expression even when the dialect is unknown', () => {
     const analysis = analyzeCron(
       candidate('unknown-posix', '0 0 3 * * *'),

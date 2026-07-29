@@ -224,6 +224,8 @@ const recoverUsingSelector = (
   const hasTextMarkers =
     recovered.some((line) => line.textMarkerHint) &&
     sidedLines.length > 0 &&
+    // A non-empty markerless context row mixed into a text-marker hunk is
+    // inherently ambiguous, so leave that file unnormalized.
     sidedLines.every((line) => {
       const marker = diffMarker(line.diffSide);
       return marker !== undefined && line.text.startsWith(marker);

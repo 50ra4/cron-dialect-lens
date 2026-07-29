@@ -1,5 +1,8 @@
 import type { CronWarning } from './types';
-import { isStandardCronExpression } from './standardCronFields';
+import {
+  findStandardCronFieldViolation,
+  formatStandardCronFieldViolation,
+} from './standardCronFields';
 
 const OFFICIAL_MACROS = new Set([
   '@annually',
@@ -48,12 +51,17 @@ export const getKubernetesWarnings = (
       },
     ];
   }
-  if (!isStandardCronExpression(normalized, { allowQuestionMark: true })) {
+  const violation = findStandardCronFieldViolation(normalized, {
+    allowQuestionMark: true,
+  });
+  if (violation) {
     return [
       {
         code: 'INVALID_EXPRESSION',
-        message:
-          'This expression uses cron syntax that Kubernetes CronJob does not support.',
+        message: formatStandardCronFieldViolation(
+          'Kubernetes CronJob',
+          violation,
+        ),
         severity: 'error',
       },
     ];

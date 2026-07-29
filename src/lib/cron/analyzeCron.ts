@@ -134,6 +134,8 @@ const baseWarnings = (candidate: CronCandidate): CronWarning[] => {
       severity: 'warning',
     },
   ];
+  // Unknown POSIX intentionally stays permissive: cron-parser accepts common
+  // Vixie/POSIX-compatible forms such as day-of-week 7 for Sunday.
   if (
     candidate.expression.startsWith('@') ||
     candidate.expression.split(/\s+/u).length !== 5
