@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 import { zipSync } from 'fflate';
 
+import { THIRD_PARTY_LICENSE_FILE } from './third-party-licenses.mjs';
+
 const FIXED_MTIME = new Date(1980, 0, 1, 0, 0, 0);
 const FILE_ATTRIBUTES = 0o100644 << 16;
 // Vite copies public/logo/ to extension/logo/ during production builds, while
@@ -49,6 +51,11 @@ export const createExtensionArchive = async ({
   const files = await collectFiles(sourceDirectory, sourceDirectory);
   if (files.length === 0) {
     throw new Error(`Extension directory is empty: ${sourceDirectory}`);
+  }
+  if (!files.some(({ path }) => path === THIRD_PARTY_LICENSE_FILE)) {
+    throw new Error(
+      `Extension directory must include ${THIRD_PARTY_LICENSE_FILE}.`,
+    );
   }
 
   const archiveEntries = Object.fromEntries(

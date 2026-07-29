@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+  <body>
+    <section class="file" data-path=".github/workflows/ci.yml">
+      <table>
+        <tr>
+          <td class="blob-code blob-code-context">on:</td>
+        </tr>
+        <tr>
+          <td class="blob-code blob-code-context">&nbsp;&nbsp;schedule:</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code" data-line-type="deletion"><span data-code-marker="-">-</span>&nbsp;&nbsp;&nbsp;&nbsp;- cron: '0 0 * * *'</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code" data-line-type="addition"><span data-code-marker="+">+</span>&nbsp;&nbsp;&nbsp;&nbsp;- cron: '0 9 * * *'</td>
+        </tr>
+      </table>
+    </section>
+    <section class="file" data-path=".github/workflows/nightly.yml">
+      <table>
+        <tr>
+          <td class="blob-code blob-code-context"> on:</td>
+        </tr>
+        <tr>
+          <td class="blob-code blob-code-context">   schedule:</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code" data-line-type="deletion">-    - cron: '0 0 * * *'</td>
+        </tr>
+        <tr>
+          <!-- prettier-ignore -->
+          <td class="blob-code" data-line-type="addition">+    - cron: '0 9 * * *'</td>
+        </tr>
+      </table>
+    </section>
+  </body>
+</html>

@@ -17,17 +17,12 @@ export default defineManifest(({ command }) => ({
   ...manifestVersion,
   manifest_version: 3,
   name: EXTENSION_NAMES[command],
-  description: '',
+  description:
+    'Explain GitHub Actions and Kubernetes cron schedules locally on GitHub.',
   icons: {
     '16': `public/logo/icon16${createIconFileSuffix(command)}.png`,
     '48': `public/logo/icon48${createIconFileSuffix(command)}.png`,
     '128': `public/logo/icon128${createIconFileSuffix(command)}.png`,
-  },
-  action: {
-    default_popup: 'popup.html',
-  },
-  options_ui: {
-    page: 'options.html',
   },
   ...(command === 'build'
     ? {
@@ -36,16 +31,12 @@ export default defineManifest(({ command }) => ({
         },
       }
     : {}),
-  // Declare only permissions for Chrome APIs that the extension actually uses.
-  // Keep the allowlists in scripts/verify-manifest.mjs in sync when adding one.
-  permissions: ['storage'],
+  permissions: [],
   content_scripts: [
     {
-      matches: ['https://example.com/*'],
-      js: ['src/entrypoints/content/sample.tsx'],
+      matches: ['https://github.com/*'],
+      js: ['src/entrypoints/content/cronLens.tsx'],
+      run_at: 'document_idle',
     },
   ],
-  background: {
-    service_worker: 'src/entrypoints/background/background.ts',
-  },
 }));

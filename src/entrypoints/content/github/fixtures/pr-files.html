@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+  <body>
+    <main id="files">
+      <section class="file" data-path=".github/workflows/ci.yml">
+        <div class="file-header" data-path=".github/workflows/ci.yml">.github/workflows/ci.yml</div>
+        <table>
+          <tr data-line-number="10"><td class="blob-code blob-code-addition">on:</td></tr>
+          <tr data-line-number="11"><td class="blob-code blob-code-addition">  schedule:</td></tr>
+          <tr data-line-number="12"><td class="blob-code blob-code-addition">    - cron: '0 * * * *'</td></tr>
+        </table>
+      </section>
+      <section class="file" data-path="deploy/cronjob.yaml">
+        <div class="file-header" data-path="deploy/cronjob.yaml">deploy/cronjob.yaml</div>
+        <table>
+          <tr data-line-number="20"><td class="blob-code blob-code-context">kind: CronJob</td></tr>
+          <tr data-line-number="21"><td class="blob-code blob-code-context">spec:</td></tr>
+          <tr data-line-number="22"><td class="blob-code blob-code-deletion">  timeZone: UTC</td></tr>
+          <tr data-line-number="22"><td class="blob-code blob-code-addition">  timeZone: Asia/Tokyo</td></tr>
+          <tr data-line-number="23"><td class="blob-code blob-code-addition">  schedule: '0 3 * * 1'</td></tr>
+        </table>
+      </section>
+      <section class="file" data-path="src/ignored.ts">
+        <table><tr data-line-number="1"><td class="blob-code">schedule: '* * * * *'</td></tr></table>
+      </section>
+    </main>
+  </body>
+</html>

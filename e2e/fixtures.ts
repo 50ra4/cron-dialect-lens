@@ -11,7 +11,7 @@ import {
   type Page,
 } from '@playwright/test';
 
-const PRODUCTION_CONTENT_MATCH = 'https://example.com/*';
+const PRODUCTION_CONTENT_MATCH = 'https://github.com/*';
 const E2E_CONTENT_MATCH = 'http://127.0.0.1/*';
 
 type TestFixtures = {
@@ -20,7 +20,6 @@ type TestFixtures = {
 
 type WorkerFixtures = {
   extensionContext: BrowserContext;
-  extensionId: string;
   testPageUrl: string;
 };
 
@@ -73,13 +72,6 @@ const prepareExtension = async (): Promise<{
       throw new Error('Built extension manifest must be an object.');
     }
 
-    if (
-      !isRecord(parsedManifest.background) ||
-      typeof parsedManifest.background.service_worker !== 'string'
-    ) {
-      throw new Error('Built extension has no background service worker.');
-    }
-
     const contentScriptMatches = replaceContentMatches(
       parsedManifest.content_scripts,
     );
@@ -89,13 +81,8 @@ const prepareExtension = async (): Promise<{
       );
     }
 
-    const webAccessibleResourceMatches = replaceContentMatches(
-      parsedManifest.web_accessible_resources,
-    );
-    if (webAccessibleResourceMatches === 0) {
-      throw new Error(
-        `Built extension has no web_accessible_resources matching ${PRODUCTION_CONTENT_MATCH}.`,
-      );
+    if (parsedManifest.web_accessible_resources !== undefined) {
+      replaceContentMatches(parsedManifest.web_accessible_resources);
     }
     await writeFile(
       manifestPath,
@@ -133,6 +120,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
           {
             channel: 'chromium',
             headless: true,
+            timezoneId: 'UTC',
             args: [
               `--disable-extensions-except=${extensionPath}`,
               `--load-extension=${extensionPath}`,
@@ -148,33 +136,20 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     { scope: 'worker' },
   ],
 
-  extensionId: [
-    async ({ extensionContext }, provide) => {
-      let serviceWorker = extensionContext
-        .serviceWorkers()
-        .find((worker) => worker.url().startsWith('chrome-extension://'));
-
-      serviceWorker ??= await extensionContext.waitForEvent('serviceworker', {
-        predicate: (worker) => worker.url().startsWith('chrome-extension://'),
-      });
-
-      await provide(new URL(serviceWorker.url()).host);
-    },
-    { scope: 'worker' },
-  ],
-
   testPageUrl: [
     // Playwright requires the fixture dependency argument to use object destructuring.
     // oxlint-disable-next-line no-empty-pattern
     async ({}, provide) => {
+      const fixture = await readFile(
+        resolve(process.cwd(), 'e2e/pages/github-cron-fixture.html'),
+        'utf8',
+      );
       const server = createServer((_request, response) => {
         response.writeHead(200, {
           Connection: 'close',
           'Content-Type': 'text/html; charset=utf-8',
         });
-        response.end(
-          '<!doctype html><html><body><main>E2E fixture page</main></body></html>',
-        );
+        response.end(fixture);
       });
 
       await new Promise<void>((resolvePromise, rejectPromise) => {
@@ -189,7 +164,9 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       }
 
       try {
-        await provide(`http://127.0.0.1:${address.port}/`);
+        await provide(
+          `http://127.0.0.1:${address.port}/acme/widgets/pull/42/files`,
+        );
       } finally {
         await closeServer(server);
       }

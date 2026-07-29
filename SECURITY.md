@@ -2,8 +2,8 @@
 
 ## Supported Versions
 
-This project does not maintain versioned releases; only the latest commit on
-`main` is supported. Please update to the latest `main` before reporting a
+Only the latest published release and the latest commit on `main` are
+supported. Please reproduce against one of those versions before reporting a
 vulnerability.
 
 ## Reporting a Vulnerability

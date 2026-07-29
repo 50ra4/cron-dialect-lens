@@ -35,6 +35,10 @@ test('archives sorted distributable contents without Vite-copied icons', async (
     join(sourceDirectory, 'manifest.json'),
     '{"version":"1.0.0"}',
   );
+  await writeFile(
+    join(sourceDirectory, 'THIRD_PARTY_LICENSES.txt'),
+    'license notices',
+  );
   await writeFile(join(sourceDirectory, 'assets', 'app.js'), 'console.log(1);');
   await writeFile(join(sourceDirectory, 'logo', 'icon16.png'), 'production');
   await writeFile(
@@ -51,6 +55,7 @@ test('archives sorted distributable contents without Vite-copied icons', async (
 
   const files = unzipSync(await readFile(outputPath));
   expect(Object.keys(files)).toEqual([
+    'THIRD_PARTY_LICENSES.txt',
     'assets/app.js',
     'manifest.json',
     'public/logo/icon16.png',
@@ -63,6 +68,10 @@ test('creates byte-identical archives when source mtimes change', async () => {
   await mkdir(sourceDirectory);
   const manifestPath = join(sourceDirectory, 'manifest.json');
   await writeFile(manifestPath, '{"version":"1.0.0"}');
+  await writeFile(
+    join(sourceDirectory, 'THIRD_PARTY_LICENSES.txt'),
+    'license notices',
+  );
 
   const firstArchive = join(temporaryDirectory, 'first.zip');
   const secondArchive = join(temporaryDirectory, 'second.zip');
@@ -81,4 +90,20 @@ test('creates byte-identical archives when source mtimes change', async () => {
       .update(await readFile(path))
       .digest('hex');
   expect(await digest(secondArchive)).toBe(await digest(firstArchive));
+});
+
+test('rejects an archive that omits third-party license notices', async () => {
+  const sourceDirectory = join(temporaryDirectory, 'extension');
+  await mkdir(sourceDirectory);
+  await writeFile(
+    join(sourceDirectory, 'manifest.json'),
+    '{"version":"1.0.0"}',
+  );
+
+  await expect(
+    createExtensionArchive({
+      sourceDirectory,
+      outputPath: join(temporaryDirectory, 'extension.zip'),
+    }),
+  ).rejects.toThrow('THIRD_PARTY_LICENSES.txt');
 });

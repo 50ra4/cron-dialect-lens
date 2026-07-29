@@ -1,18 +1,17 @@
 {
-  "name": "crx-vite-ts-react-template",
-  "version": "1.0.0",
-  "description": "Chrome extension (MV3) template with Vite, TypeScript, React & CRXJS — all four surfaces (popup, options, background, content script) wired via typed messaging & storage, plus a build/verify/release pipeline.",
+  "name": "cron-dialect-lens",
+  "version": "0.1.0",
+  "description": "Explain GitHub Actions and Kubernetes cron schedules directly on GitHub, entirely in the browser.",
   "keywords": [
     "chrome-extension",
     "manifest-v3",
     "vite",
     "typescript",
     "react",
-    "crxjs",
-    "template",
-    "boilerplate",
-    "typed-messaging",
-    "typed-storage"
+    "cron",
+    "github-actions",
+    "kubernetes",
+    "developer-tools"
   ],
   "main": "index.js",
   "scripts": {
@@ -27,17 +26,21 @@
     "preview": "vite preview",
     "package": "npm run build && npm run verify:manifest && node scripts/package-extension.mjs",
     "zip": "npm run package",
+    "render:icons": "node scripts/render-icons.mjs",
     "lint": "oxlint src scripts e2e *.config.ts",
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"e2e/**/*.ts\" \"scripts/**/*.mjs\" \"*.config.ts\"",
     "check-type": "tsc --noEmit",
     "test": "vitest run"
   },
   "lint-staged": {
-    "*.{mjs,ts,tsx}": ["oxlint --fix", "prettier --write"]
+    "*.{mjs,ts,tsx}": [
+      "oxlint --fix",
+      "prettier --write"
+    ]
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/50ra4/crx-vite-ts-react-template.git"
+    "url": "git+https://github.com/50ra4/cron-dialect-lens.git"
   },
   "author": "50ra4",
   "license": "MIT",
@@ -45,10 +48,12 @@
     "node": ">=24.0.0"
   },
   "bugs": {
-    "url": "https://github.com/50ra4/crx-vite-ts-react-template/issues"
+    "url": "https://github.com/50ra4/cron-dialect-lens/issues"
   },
-  "homepage": "https://github.com/50ra4/crx-vite-ts-react-template#readme",
+  "homepage": "https://github.com/50ra4/cron-dialect-lens#readme",
   "dependencies": {
+    "cron-parser": "5.6.2",
+    "cronstrue": "3.24.0",
     "react": "19.2.7",
     "react-dom": "19.2.7"
   },
